@@ -44,7 +44,7 @@ class Slot():
 
 class Filling_Function_Parameters():
     def __init__(self):
-        self.utility_function = 'uniform'
+        self.filling_function = 'uniform'
         self.uniform_distribution_p_value = 0.7
 
 
@@ -122,11 +122,11 @@ class ParkingLot():
         plt.show(self.g)
 
     def fill_parking_slots(self):
-        if self.filling_function_parameters.utility_function == 'uniform':
+        if self.filling_function_parameters.filling_function == 'uniform':
             return self.fill_parking_uniform()
 
     def fill_parking_uniform(self):
-        for i in self.w*self.l:
+        for i in range(self.w*self.l):
             rn = rnd.random()
             if (rn < self.filling_function_parameters.uniform_distribution_p_value):
                 print('place occupied')
