@@ -89,7 +89,8 @@ class ParkingLot():
         # create grid
         number_of_lanes = self.get_number_of_lanes()
         self.printDebug('number_of_lanes='+str(number_of_lanes))
-        self.g = nx.grid_2d_graph(self.w, number_of_lanes, periodic=True)
+        # width = number of parking slots + 1 driveway places on each side
+        self.g = nx.grid_2d_graph(self.w+2, number_of_lanes)
         self.g = nx.convert_node_labels_to_integers(self.g)
 
         self.filling_function_parameters = filling_function_parameters
@@ -113,7 +114,7 @@ class ParkingLot():
         if(self.single_depth_outer_lanes):
             return 2*self.l + 1
         else:
-            return math.ceil(self.l/2)
+            return math.ceil(self.l/2)+self.l
 
     def set_lane_directions(self):
         if (self.lane_direction_paramenters.directed_lanes):
