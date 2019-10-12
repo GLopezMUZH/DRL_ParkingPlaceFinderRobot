@@ -78,15 +78,17 @@ class ParkingLot():
         object of 
     """
 
-    def __init__(self, lane_direction_paramenters: Lane_Direction_Parameters, filling_function_parameters: Filling_Function_Parameters, w=10, l=1, parking_lane_depth=2, single_depth_outer_lanes=True):
+    def __init__(self, lane_direction_paramenters: Lane_Direction_Parameters, filling_function_parameters: Filling_Function_Parameters, w=10, l=1, parking_lane_depth=2, single_depth_outer_lanes=True, debug = False):
         self.w = w
         self.l = l
         self.parking_lane_dept = parking_lane_depth
         self.single_depth_outer_lanes = single_depth_outer_lanes
+        self.debug = debug
         # helps define structure
         self.lane_direction_paramenters = lane_direction_paramenters
         # create grid
         number_of_lanes = self.get_number_of_lanes()
+        self.printDebug('number_of_lanes='+str(number_of_lanes))
         self.g = nx.grid_2d_graph(self.w, number_of_lanes, periodic=True)
         self.g = nx.convert_node_labels_to_integers(self.g)
 
@@ -94,6 +96,14 @@ class ParkingLot():
 
         self.fill_parking_slots()
         self.set_lane_directions()
+
+    def printDebug(self, *val):
+        if self.debug:
+            """
+            with open('file.txt', 'a') as f:
+                print(str(datetime.today().strftime("%d-%m-%y %H %M %S")), 'DEBUG', list(val), file=f)
+            """
+            print(list(val))
 
     def get_number_of_lanes(self):
         """
