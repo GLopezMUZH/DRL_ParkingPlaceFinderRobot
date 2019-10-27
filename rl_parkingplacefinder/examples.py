@@ -4,6 +4,9 @@
 #from rl_parkingplacefinder import ParkingLot as ParkingLot
 
 import networkx as nx
+import rl_parkingplacefinder
+from rl_parkingplacefinder import Slot as Slot
+from rl_parkingplacefinder import ParkingLot as ParkingLot
 
 # E D D D D D D  7 Entry 
 #   D P P P P D  6
@@ -26,7 +29,6 @@ g_grid = nx.grid_2d_graph(nr_lanes, nr_places_in_lane)
 g_grid = nx.convert_node_labels_to_integers(g_grid)
 
 node_color_map = []
-
 #only for single depth
 slot_nr = -1
 for lane in range(nr_lanes):
@@ -53,6 +55,43 @@ nx.draw(g_grid, pos=pos,  node_color = node_color_map, with_labels=True)
 
 #%%
 #slot = Slot('A1','P',0)
+ffp = rl_parkingplacefinder.Filling_Function_Parameters(uniform_distribution_p_value = 0.5)
+print(ffp.uniform_distribution_p_value)
+print(ffp.filling_function)
+
 
 
 #%%
+ldp = rl_parkingplacefinder.Lane_Direction_Parameters()
+print(ldp.directed_lanes)
+print(ldp.lane_direction_function)
+
+
+
+# %%
+parking_lot = ParkingLot(lane_direction_paramenters=ldp, 
+                         filling_function_parameters=ffp, 
+                         nr_parking_slots_per_lane=4,
+                         nr_parking_lanes=3, 
+                         parking_lane_depth=1, 
+                         debug=True,
+                         draw_grap = True,
+                         show_summary = True,
+                         agent = False
+                        )
+
+
+
+# %%
+parking_lot = ParkingLot(lane_direction_paramenters=ldp, 
+                         filling_function_parameters=ffp, 
+                         nr_parking_slots_per_lane=4,
+                         nr_parking_lanes=2, 
+                         parking_lane_depth=1, 
+                         debug=True,
+                         draw_grap = True,
+                         show_summary = True,
+                         agent = True
+                        )
+
+# %%
