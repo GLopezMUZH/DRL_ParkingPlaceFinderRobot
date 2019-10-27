@@ -2,7 +2,7 @@
 # %%
 """
     parkingplacefinder is an OpenSource python package for the reinforcement learning
-    of an agent that searches for a space in a parcking lot
+    of an agent that searches for the most optimal free parking spot in a parking lot
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published
@@ -30,6 +30,7 @@ import csv
 
 
 class Slot():
+    # This class is so far not used for the rest of the code, correct?
     """ 
     Parameters
     ----------
@@ -52,7 +53,7 @@ class Filling_Function_Parameters():
 class Lane_Direction_Parameters():
     """
         directed_driving_lanes : boolean (default: False)
-        Indicates if driving lanes are directed, if they are direcrted, lane_direction_function is obligatory
+        Indicates if driving lanes are directed, if they are directed, lane_direction_function is obligatory
     """
     def __init__(self):
         self.directed_lanes = False
@@ -68,7 +69,7 @@ class ParkingLot():
     w : input integer (default: 10)
         Number of parking slots in dimension width
     l : input integer (default: 1)
-        Number of parking slots in dimension lenght
+        Number of parking slots in dimension length
     parking_lane_depth : input integer (default: 2) 
         Single depth = 1, double depth 0 2
     single_depth_outer_lanes: boolean (default: True)
@@ -80,7 +81,7 @@ class ParkingLot():
         object of 
     """
 
-    def __init__(self, lane_direction_paramenters: Lane_Direction_Parameters, filling_function_parameters: Filling_Function_Parameters, nr_parking_slots_per_lane=10, nr_parking_lanes=1, parking_lane_depth=2, single_depth_outer_lanes=True, debug = False, draw_grap = False, show_summary = False):
+    def __init__(self, lane_direction_paramenters: Lane_Direction_Parameters, filling_function_parameters: Filling_Function_Parameters, nr_parking_slots_per_lane=10, nr_parking_lanes=1, parking_lane_depth=2, single_depth_outer_lanes=True, debug = False, draw_grap = False, show_summary = False, agent = False):
         self.nr_parking_slots_per_lane = nr_parking_slots_per_lane
         self.nr_parking_lanes = nr_parking_lanes
         self.nr_parking_slots = nr_parking_slots_per_lane*nr_parking_lanes
@@ -105,6 +106,7 @@ class ParkingLot():
         # set lane directions TODO
         #self.set_lane_directions()
 
+        # what does "grap" refer to?
         if draw_grap:
             self.g.nodes.data()
             pos = nx.spring_layout(self.g,iterations=1000)
@@ -115,18 +117,53 @@ class ParkingLot():
             print("nr_occupied_parking_slots = ", self.nr_occupied_parking_slots )
             pct_message = 'percent occupation = ' + f"({(self.nr_occupied_parking_slots/self.nr_parking_slots):.3g})"
             print(pct_message)
+            # create occupancy status list including all parking spots
+            print('Occupancy Status:')
+            for slot_nr_in_graph in range(self.nr_slots_total):
+                if self.g.nodes[slot_nr_in_graph]['slot_type'] == 'park':
+                    print(f"{slot_nr_in_graph}: {self.g.nodes[slot_nr_in_graph]['occupation']}")
+        
+
+        if agent:
+            # if True: let an agent run through the created parking lot and park in the first available parking spot
+
+            curr_pos = 0 # stores current position of agent, currently always starts on node 0
+            status = 'moving' # movement status of agent
+            step = 0 # counts number of steps agent takes until it parks
+            print("History:")
+
+            while status == 'moving':
+                step += 1
+                
+                # get all neighboring nodes ("possible ways to drive")
+                options = list(self.g.neighbors(curr_pos))
+                print(f"Step {step}: Currently on node {curr_pos}")
+                
+                # check if parking spot is vacant and park on it if yes
+                for spot in options:
+                    if self.g.nodes[spot]['slot_type'] == 'park' and self.g.nodes[spot]['occupation'] == 'vacant':
+                        curr_pos = spot
+                        status = 'parked'
+                        print(f"We park in Spot {curr_pos} after {step} steps")
+                
+                # if no parking spot is vacant: restrict set of options to driveway nodes and randomly continue 
+                options = [spot for spot in options if self.g.nodes[spot]['slot_type'] == 'drive']
+                curr_pos = rnd.choice(options) 
+                    
+                
 
 
     def create_parking_geography(self):
         # width = number of parking slots + 1 driveway places on each side
         self.g = nx.grid_2d_graph(self.nr_lanes_total, self.nr_slots_per_lane)
         self.g = nx.convert_node_labels_to_integers(self.g)
+        # depth is so far only implemented for parking lanes of depth 1
         if(self.parking_lane_dept==1):
             self.create_parking_single_depth()
 
 
     def create_parking_single_depth(self):
-        #only for single depth, we always start with drive path
+        # only for single depth, we always start with drive path
         slot_nr_in_graph = -1
         for lane in range(self.nr_lanes_total):
             lane_nr = lane+1
@@ -141,10 +178,10 @@ class ParkingLot():
                     else:
                         self.g.nodes[slot_nr_in_graph]['slot_type'] = 'park'
                         self.node_color_map.append('green')
+                        self.g.nodes[slot_nr_in_graph]['occupation'] = 'vacant'
                 else:
                         self.g.nodes[slot_nr_in_graph]['slot_type'] = 'drive'
                         self.node_color_map.append('grey')
-
 
 
 
@@ -197,6 +234,9 @@ class ParkingLot():
                 rn = rnd.rand()
                 if (rn < self.filling_function_parameters.uniform_distribution_p_value):
                     self.node_color_map[i]='red'
+                    self.g.nodes[i]['occupation'] = 'taken'
+                    # so far only visual indication if parking spot is occupied (red)
+                    # otherwise we only have visual indication and know number of occupied spots only on parking lot level
                     self.nr_occupied_parking_slots += 1
 
     def export_parking_lot_data(self):
@@ -218,3 +258,8 @@ class Park_Finder_Agent():
         #row = agent//self.nr_parking_lanes
         #col = agent%self.nr_parking_lanes
         self.id_name = 'hola'
+#%%
+
+
+
+
