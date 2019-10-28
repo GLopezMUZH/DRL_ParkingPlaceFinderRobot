@@ -1,12 +1,13 @@
 #%%
 #import rl_parkingplacefinder
 #from rl_parkingplacefinder import Slot as Slot
-#from rl_parkingplacefinder import ParkingLot as ParkingLot
+#from rl_parkingplacefinder import Parking_Lot as Parking_Lot
 
 import networkx as nx
 import rl_parkingplacefinder
+from rl_parkingplacefinder import *
 from rl_parkingplacefinder import Slot as Slot
-from rl_parkingplacefinder import ParkingLot as ParkingLot
+from rl_parkingplacefinder import Parking_Lot as Parking_Lot
 
 # E D D D D D D  7 Entry 
 #   D P P P P D  6
@@ -69,29 +70,32 @@ print(ldp.lane_direction_function)
 
 
 # %%
-parking_lot = ParkingLot(lane_direction_paramenters=ldp, 
+parking_lot = Parking_Lot(lane_direction_paramenters=ldp, 
                          filling_function_parameters=ffp, 
                          nr_parking_slots_per_lane=4,
                          nr_parking_lanes=3, 
                          parking_lane_depth=1, 
                          debug=True,
-                         draw_grap = True,
-                         show_summary = True,
-                         agent = False
+                         draw_graph = True,
+                         show_summary = True
                         )
 
 
 
 # %%
-parking_lot = ParkingLot(lane_direction_paramenters=ldp, 
+parking_lot = Parking_Lot(lane_direction_paramenters=ldp, 
                          filling_function_parameters=ffp, 
                          nr_parking_slots_per_lane=4,
                          nr_parking_lanes=2, 
                          parking_lane_depth=1, 
                          debug=True,
-                         draw_grap = True,
-                         show_summary = True,
-                         agent = True
+                         draw_graph = True,
+                         show_summary = True
                         )
 
 # %%
+agent = Park_Finder_Agent()
+agent.search_parking(parking_lot)
+parking_lot.plot()
+
+

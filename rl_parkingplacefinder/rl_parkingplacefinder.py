@@ -26,18 +26,27 @@ import math
 import networkx as nx
 import csv
 
+
 # %%
+class ParkingPlaceFinderModel():
+    """
+    This is the general class to run a reinforcement learning parking place finder experiment
+    Parameters:
+    """
+    def __init__(self):
+        self.id_name = ""
+        self.rl_strategy = ""
 
 
+#%% 
 class Slot():
-    # This class is so far not used for the rest of the code, correct?
     """ 
     Parameters
     ----------
     slot_type: string
         values: 'P','D'
     """
-
+    # This class is so far not used for the rest of the code, correct?
     def __init__(self, id_name, slot_type, slot_state):
         self.id_name = id_name
         self.slot_type = slot_type
@@ -59,8 +68,8 @@ class Lane_Direction_Parameters():
         self.directed_lanes = False
         self.lane_direction_function = "alternates"
 
-
-class ParkingLot():
+#%%
+class Parking_Lot():
     """ Base class for analyzing a directed graphs' bowtie structure values.
     A BowTieNetworkValues stores the number of nodes of each bowtie component 
     and the percent of each component from the whole graph.
@@ -81,7 +90,7 @@ class ParkingLot():
         object of 
     """
 
-    def __init__(self, lane_direction_paramenters: Lane_Direction_Parameters, filling_function_parameters: Filling_Function_Parameters, nr_parking_slots_per_lane=10, nr_parking_lanes=1, parking_lane_depth=2, single_depth_outer_lanes=True, debug = False, draw_grap = False, show_summary = False, agent = False):
+    def __init__(self, lane_direction_paramenters: Lane_Direction_Parameters, filling_function_parameters: Filling_Function_Parameters, nr_parking_slots_per_lane=10, nr_parking_lanes=1, parking_lane_depth=2, single_depth_outer_lanes=True, debug = False, draw_graph = False, show_summary = False):
         self.nr_parking_slots_per_lane = nr_parking_slots_per_lane
         self.nr_parking_lanes = nr_parking_lanes
         self.nr_parking_slots = nr_parking_slots_per_lane*nr_parking_lanes
@@ -106,11 +115,8 @@ class ParkingLot():
         # set lane directions TODO
         #self.set_lane_directions()
 
-        # what does "grap" refer to?
-        if draw_grap:
-            self.g.nodes.data()
-            pos = nx.spring_layout(self.g,iterations=1000)
-            nx.draw(self.g, pos=pos,  node_color = self.node_color_map, with_labels=True)
+        if draw_graph:
+            self.plot()
         
         if show_summary:
             print("nr_parking_slots", self.nr_parking_slots)
@@ -123,35 +129,6 @@ class ParkingLot():
                 if self.g.nodes[slot_nr_in_graph]['slot_type'] == 'park':
                     print(f"{slot_nr_in_graph}: {self.g.nodes[slot_nr_in_graph]['occupation']}")
         
-
-        if agent:
-            # if True: let an agent run through the created parking lot and park in the first available parking spot
-
-            curr_pos = 0 # stores current position of agent, currently always starts on node 0
-            status = 'moving' # movement status of agent
-            step = 0 # counts number of steps agent takes until it parks
-            print("History:")
-
-            while status == 'moving':
-                step += 1
-                
-                # get all neighboring nodes ("possible ways to drive")
-                options = list(self.g.neighbors(curr_pos))
-                print(f"Step {step}: Currently on node {curr_pos}")
-                
-                # check if parking spot is vacant and park on it if yes
-                for spot in options:
-                    if self.g.nodes[spot]['slot_type'] == 'park' and self.g.nodes[spot]['occupation'] == 'vacant':
-                        curr_pos = spot
-                        status = 'parked'
-                        print(f"We park in Spot {curr_pos} after {step} steps")
-                
-                # if no parking spot is vacant: restrict set of options to driveway nodes and randomly continue 
-                options = [spot for spot in options if self.g.nodes[spot]['slot_type'] == 'drive']
-                curr_pos = rnd.choice(options) 
-                    
-                
-
 
     def create_parking_geography(self):
         # width = number of parking slots + 1 driveway places on each side
@@ -222,7 +199,12 @@ class ParkingLot():
         nx.draw_spectral(G2, node_size=600, node_color='w')
 
     def plot(self):
-        plt.show(self.g)
+        if(self.g.number_of_nodes() < 1000):
+            self.g.nodes.data()
+            pos = nx.spring_layout(self.g,iterations=1000)
+            nx.draw(self.g, pos=pos,  node_color = self.node_color_map, with_labels=True)
+        else:
+            print("Graph is too large to be drawn")
 
     def fill_parking_slots(self):
         if self.filling_function_parameters.filling_function == 'uniform':
@@ -258,6 +240,45 @@ class Park_Finder_Agent():
         #row = agent//self.nr_parking_lanes
         #col = agent%self.nr_parking_lanes
         self.id_name = 'hola'
+
+
+    def search_parking(self, parking_lot :  Parking_Lot):
+        # if True: let an agent run through the created parking lot and park in the first available parking spot
+
+        curr_pos = 0 # stores current position of agent, currently always starts on node 0
+        status = 'moving' # movement status of agent
+        step = 0 # counts number of steps agent takes until it parks
+        print("History:")
+
+        while status == 'moving':
+            step += 1
+            
+            # get all neighboring nodes ("possible ways to drive")
+            options = list(parking_lot.g.neighbors(curr_pos))
+            print(f"Step {step}: Currently on node {curr_pos}")
+            
+            # check if parking spot is vacant and park on it if yes
+            for spot in options:
+                if parking_lot.g.nodes[spot]['slot_type'] == 'park' and parking_lot.g.nodes[spot]['occupation'] == 'vacant':
+                    curr_pos = spot
+                    status = 'parked'
+                    print(f"We park in Spot {curr_pos} after {step} steps")
+            
+            # update the status of the parking slot
+            if (status == 'parked'):
+                parking_lot.g.nodes[spot]['occupation'] = 'taken'
+                parking_lot.node_color_map[spot]='red'
+            
+            # if no parking spot is vacant: restrict set of options to driveway nodes and randomly continue 
+            options = [spot for spot in options if parking_lot.g.nodes[spot]['slot_type'] == 'drive']
+            curr_pos = rnd.choice(options) 
+                
+                
+
+
+
+
+
 #%%
 
 
