@@ -47,8 +47,9 @@ parking_lot = rl_parkingplacefinder.Parking_Lot(lane_direction_paramenters=ldp,
                         )
 
 # %%
+found_slot = -1
 agent = rl_parkingplacefinder.Park_Finder_Agent()
-agent.search_parking(parking_lot)
+found_slot = agent.find_parking(parking_lot)
 parking_lot.plot()
 
 

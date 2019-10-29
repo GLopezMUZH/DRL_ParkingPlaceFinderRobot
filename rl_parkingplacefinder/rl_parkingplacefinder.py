@@ -46,7 +46,7 @@ class Park_Finder_Agent():
         self.id_name = 'hola'
 
 
-    def search_parking(self, parking_lot :  Parking_Lot):
+    def find_parking(self, parking_lot :  Parking_Lot):
         # if True: let an agent run through the created parking lot and park in the first available parking spot
 
         curr_pos = 0 # stores current position of agent, currently always starts on node 0
@@ -67,11 +67,14 @@ class Park_Finder_Agent():
                     curr_pos = spot
                     status = 'parked'
                     print(f"We park in Spot {curr_pos} after {step} steps")
+                    break
             
             # update the status of the parking slot
             if (status == 'parked'):
-                parking_lot.g.nodes[spot]['occupation'] = 'taken'
-                parking_lot.node_color_map[spot]='red'
+                parking_lot.g.nodes[curr_pos]['occupation'] = 'taken'
+                parking_lot.node_color_map[curr_pos]='red'
+                # unelegant return but for efficiency
+                return curr_pos       
             
             # if no parking spot is vacant: restrict set of options to driveway nodes and randomly continue 
             options = [spot for spot in options if parking_lot.g.nodes[spot]['slot_type'] == 'drive']
