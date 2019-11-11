@@ -26,7 +26,7 @@ import math
 import networkx as nx
 import csv
 
-from rl_parkingplacefinder.parking_lot import Parking_Lot as Parking_Lot
+from rl_parkingplacefinder.Parking_lot import Parking_Lot as Parking_Lot
 
 # %%
 """
@@ -56,11 +56,11 @@ class Park_Finder_Agent():
 
         while status == 'moving':
             step += 1
-            
+
             # get all neighboring nodes ("possible ways to drive")
             options = list(parking_lot.g.neighbors(curr_pos))
             print(f"Step {step}: Currently on node {curr_pos}")
-            
+
             # check if parking spot is vacant and park on it if yes
             for spot in options:
                 if parking_lot.g.nodes[spot]['slot_type'] == 'park' and parking_lot.g.nodes[spot]['occupation'] == 'vacant':
@@ -68,26 +68,22 @@ class Park_Finder_Agent():
                     status = 'parked'
                     print(f"We park in Spot {curr_pos} after {step} steps")
                     break
-            
+
             # update the status of the parking slot
             if (status == 'parked'):
                 parking_lot.g.nodes[curr_pos]['occupation'] = 'taken'
                 parking_lot.node_color_map[curr_pos]='red'
                 # unelegant return but for efficiency
-                return curr_pos       
-            
-            # if no parking spot is vacant: restrict set of options to driveway nodes and randomly continue 
+                return curr_pos
+
+            # if no parking spot is vacant: restrict set of options to driveway nodes and randomly continue
             options = [spot for spot in options if parking_lot.g.nodes[spot]['slot_type'] == 'drive']
-            curr_pos = rnd.choice(options) 
-                
-                
+            curr_pos = rnd.choice(options)
+
+
 
 
 
 
 
 #%%
-
-
-
-

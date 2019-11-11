@@ -11,9 +11,9 @@ import math
 import networkx as nx
 import csv
 
-#%% 
+#%%
 class Slot():
-    """ 
+    """
     Parameters
     ----------
     slot_type: string
@@ -44,7 +44,7 @@ class Lane_Direction_Parameters():
 #%%
 class Parking_Lot():
     """ Base class for analyzing a directed graphs' bowtie structure values.
-    A BowTieNetworkValues stores the number of nodes of each bowtie component 
+    A BowTieNetworkValues stores the number of nodes of each bowtie component
     and the percent of each component from the whole graph.
     Parameters
     ----------
@@ -52,15 +52,15 @@ class Parking_Lot():
         Number of parking slots in dimension width
     l : input integer (default: 1)
         Number of parking slots in dimension length
-    parking_lane_depth : input integer (default: 2) 
+    parking_lane_depth : input integer (default: 2)
         Single depth = 1, double depth 0 2
     single_depth_outer_lanes: boolean (default: True)
         Only relevant for double depth parking lanes.
         The first and last lane of the parking are only single depth parking slots
-    lane_direction_paramenters : 
-        Object of   
-    filling_function_parameters : 
-        object of 
+    lane_direction_paramenters :
+        Object of
+    filling_function_parameters :
+        object of
     """
 
     def __init__(self, lane_direction_paramenters: Lane_Direction_Parameters, filling_function_parameters: Filling_Function_Parameters, nr_parking_slots_per_lane=10, nr_parking_lanes=1, parking_lane_depth=2, single_depth_outer_lanes=True, debug = False, draw_graph = False, show_summary = False):
@@ -81,6 +81,7 @@ class Parking_Lot():
         self.nr_lanes_total =  self.get_number_of_lanes()
         self.nr_slots_total = self.nr_slots_per_lane*self.nr_lanes_total
         self.printDebug('number_of_lanes='+str(self.nr_lanes_total))
+        self.printDebug('number_of_slots='+str(self.nr_slots_total))
         self.create_parking_geography()
         # update occupied places
         self.filling_function_parameters = filling_function_parameters
@@ -90,7 +91,7 @@ class Parking_Lot():
 
         if draw_graph:
             self.plot()
-        
+
         if show_summary:
             print("nr_parking_slots", self.nr_parking_slots)
             print("nr_occupied_parking_slots = ", self.nr_occupied_parking_slots )
@@ -101,7 +102,7 @@ class Parking_Lot():
             for slot_nr_in_graph in range(self.nr_slots_total):
                 if self.g.nodes[slot_nr_in_graph]['slot_type'] == 'park':
                     print(f"{slot_nr_in_graph}: {self.g.nodes[slot_nr_in_graph]['occupation']}")
-        
+
 
     def create_parking_geography(self):
         # width = number of parking slots + 1 driveway places on each side
@@ -110,6 +111,8 @@ class Parking_Lot():
         # depth is so far only implemented for parking lanes of depth 1
         if(self.parking_lane_dept==1):
             self.create_parking_single_depth()
+        if(self.parking_lane_dept==2):
+            self.create_parking_double_depth()
 
 
     def create_parking_single_depth(self):
@@ -133,6 +136,26 @@ class Parking_Lot():
                         self.g.nodes[slot_nr_in_graph]['slot_type'] = 'drive'
                         self.node_color_map.append('grey')
 
+    def create_parking_double_depth(self):
+        # only for double depth, we always start with drive path
+        slot_nr_in_graph = -1
+        for lane in range(self.nr_lanes_total):
+            lane_nr = lane+1
+            for slot_nr_in_lane in range(self.nr_slots_per_lane):
+                slot_nr_in_graph += 1
+                # the parking lanes
+                # first and last lane are drive lanes
+                if(lane_nr==1) or (lane_nr == self.nr_lanes_total) or (slot_nr_in_graph%self.nr_slots_per_lane == self.nr_slots_per_lane-1) or (slot_nr_in_graph%self.nr_slots_per_lane == 0):
+                    self.g.nodes[slot_nr_in_graph]['slot_type'] = 'drive'
+                    self.node_color_map.append('grey')
+                    # every third lane is drive lane
+                elif((lane_nr-1)%3==0):
+                    self.g.nodes[slot_nr_in_graph]['slot_type'] = 'drive'
+                    self.node_color_map.append('grey')
+                else:
+                    self.g.nodes[slot_nr_in_graph]['slot_type'] = 'park'
+                    self.node_color_map.append('green')
+                    self.g.nodes[slot_nr_in_graph]['occupation'] = 'vacant'
 
 
     def printDebug(self, *val):
@@ -151,12 +174,9 @@ class Parking_Lot():
         # single depth parking lanes
         if(self.parking_lane_dept==1):
             return 2*self.nr_parking_lanes + 1
+        if(self.parking_lane_dept==2):
+            return 2*self.nr_parking_lanes - 1
 
-        # double depth parking lanes
-        if(self.single_depth_outer_lanes):
-            return 2*self.nr_parking_lanes + 1
-        else:
-            return math.ceil(self.nr_parking_lanes/2)+self.nr_parking_lanes
 
     def set_lane_directions(self):
         if (self.lane_direction_paramenters.directed_lanes):
