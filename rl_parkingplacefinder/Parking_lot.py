@@ -88,6 +88,7 @@ class Parking_Lot():
         self.fill_parking_slots()
         # set lane directions TODO
         #self.set_lane_directions()
+        self.export_to_pickle()
 
         if draw_graph:
             self.plot()
@@ -107,6 +108,8 @@ class Parking_Lot():
     def create_parking_geography(self):
         # width = number of parking slots + 1 driveway places on each side
         self.g = nx.grid_2d_graph(self.nr_lanes_total, self.nr_slots_per_lane)
+#        forbidden = ((1,0),(1,1))
+#        self.g.remove_edge(forbidden[0],forbidden[1])
         self.g = nx.convert_node_labels_to_integers(self.g)
         # depth is so far only implemented for parking lanes of depth 1
         if(self.parking_lane_dept==1):
@@ -226,3 +229,6 @@ class Parking_Lot():
         with open('parking_lot.csv', 'wb') as f:
             writer = csv.writer(f)
             writer.writerows(data)
+
+    def export_to_pickle(self):
+        nx.write_gpickle(self.g,'parking_lot.gpl')
