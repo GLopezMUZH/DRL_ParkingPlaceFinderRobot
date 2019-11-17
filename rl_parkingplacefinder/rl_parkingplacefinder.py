@@ -27,6 +27,8 @@ import networkx as nx
 import csv
 
 from rl_parkingplacefinder.Parking_lot import Parking_Lot as Parking_Lot
+parking_lot = nx.read_gpickle('parking_lot.gpl')
+
 
 # %%
 """
@@ -40,11 +42,32 @@ class ParkingPlaceFinderModel():
 
 # %%
 class Park_Finder_Agent():
-    def __init__(self):
-        #row = agent//self.nr_parking_lanes
-        #col = agent%self.nr_parking_lanes
+    def __init__(self, parking_lot):
+        self.parking_lot = parking_lot
+        # self.row = agent//self.nr_parking_lanes
+        # self.col = agent%self.nr_parking_lanes
         self.id_name = 'hola'
-
+        self.stateSpace = [i for i in range(len(self.parking_lot.nodes))]
+        # remove terminal state from state space
+        self.stateSpace.remove(len(self.stateSpace)-1)
+        # create state space plus with terminal state included
+        self.stateSpacePlus = [i for i in range(len(self.parking_lot.nodes))]
+        # self.actionSpace = {'U': -self.m, 'D': self.m,
+        #                     'L': -1, 'R': 1}
+        self.possibleActions = ['U', 'D', 'L', 'R']
+        self.taken_list = []
+        self.vacant_list = []
+        self.drive_list = []
+        for i in range(len(self.parking_lot.nodes)):
+            if len(parking_lot.nodes[i]) == 2:
+                if parking_lot.nodes[i]['occupation'] == 'taken':
+                    self.taken_list.append(i)
+                elif parking_lot.nodes[i]['occupation'] == 'vacant':
+                    self.vacant_list.append(i)
+            else:
+                self.drive_list.append(i)
+                    
+#%%
 
     def find_parking(self, parking_lot :  Parking_Lot):
         # if True: let an agent run through the created parking lot and park in the first available parking spot
