@@ -16,6 +16,7 @@
 #%%
 import numpy as np
 import numpy.random as rnd
+import collections
 
 import matplotlib.pylab as plt
 
@@ -47,13 +48,11 @@ class Park_Finder_Agent():
         # self.row = agent//self.nr_parking_lanes
         # self.col = agent%self.nr_parking_lanes
         self.id_name = 'hola'
-        self.stateSpace = [i for i in range(len(self.parking_lot.nodes))]
-        # remove terminal state from state space
-        self.stateSpace.remove(len(self.stateSpace)-1)
-        # create state space plus with terminal state included
-        self.stateSpacePlus = [i for i in range(len(self.parking_lot.nodes))]
-        # self.actionSpace = {'U': -self.m, 'D': self.m,
-        #                     'L': -1, 'R': 1}
+        self.m = self.get_parking_lot_width()
+        self.n = self.get_parking_lot_length()
+                
+        self.actionSpace = {'U': -self.m, 'D': self.m,
+                            'L': -1, 'R': 1}
         self.possibleActions = ['U', 'D', 'L', 'R']
         self.taken_list = []
         self.vacant_list = []
@@ -66,6 +65,29 @@ class Park_Finder_Agent():
                     self.vacant_list.append(i)
             else:
                 self.drive_list.append(i)
+        self.stateSpacePlus = self.drive_list
+        self.stateSpace = self.vacant_list + self.taken_list
+        self.agentPosition = 0
+        
+        
+        
+    def get_parking_lot_width(self):
+        # gives back the number of rows of the complete parking lot including driveways.
+        connection_list = []
+        for pair in self.parking_lot.edges:
+            connection_list.append(pair[0])
+        single_connection_list = [item for item, count in collections.Counter(connection_list).items() if count == 1]
+        return single_connection_list[1]-single_connection_list[0]
+
+    def get_parking_lot_length(self):
+        return int(len(self.parking_lot.nodes)/self.get_parking_lot_width())
+            
+                
+    def isTerminalState(self, state):
+        return state in self.stateSpacePlus and state not in self.stateSpace
+        
+        
+        
                     
 #%%
 
