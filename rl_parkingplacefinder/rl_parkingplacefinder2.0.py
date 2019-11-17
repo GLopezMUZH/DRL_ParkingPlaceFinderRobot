@@ -45,14 +45,10 @@ class ParkingPlaceFinderModel():
 class Park_Finder_Agent():
     def __init__(self, parking_lot):
         self.parking_lot = parking_lot
-        # self.row = agent//self.nr_parking_lanes
-        # self.col = agent%self.nr_parking_lanes
-        self.id_name = 'hola'
         self.m = self.get_parking_lot_width()
         self.n = self.get_parking_lot_length()
                 
-        self.actionSpace = {'U': -self.m, 'D': self.m,
-                            'L': -1, 'R': 1}
+        self.actionSpace = {'U': -self.m, 'D': self.m, 'L': -1, 'R': 1}
         self.possibleActions = ['U', 'D', 'L', 'R']
         self.taken_list = []
         self.vacant_list = []
@@ -70,7 +66,6 @@ class Park_Finder_Agent():
         # self.grid = np.zeros((self.m,self.n))
         self.agentPosition = 0
         self.grid = self.parkingLotToArray()
-        
         
         
     def get_parking_lot_width(self):
@@ -106,30 +101,38 @@ class Park_Finder_Agent():
         y = self.agentPosition % self.n
         return x, y
     
+    
     def setState(self, state):
+        # where agent was make it driveway again
         x, y = self.getAgentRowAndColumn()
         self.grid[x][y] = 1
+        # where agent is make square
         self.agentPosition = state
         x, y = self.getAgentRowAndColumn()
         self.grid[x][y] = 3
         
     def getReward(self, resultingState):
-        if not self.isTerminalState(resultingState):
+        if resultingState in self.drive_list:
             return -1
         if resultingState in self.taken_list:
-            return -5
+            return -300
         if resultingState in self.vacant_list:
-            return  5 / nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.parking_lot.nodes))
+            return  25 / nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.parking_lot.nodes))
         else:
-            return 0
+            return -400
+        
         
     def step(self, action):
-        agentX, agentY = self.getAgentRowAndColumn()
+        # agentX, agentY = self.getAgentRowAndColumn()
         resultingState = self.agentPosition + self.actionSpace[action]
+        print(resultingState)
 
         reward = self.getReward(resultingState)
+        if resultingState == self.agentPosition:
+            reward = -200
         if not self.offGridMove(resultingState, self.agentPosition):
             self.setState(resultingState)
+            self.agentPosition = resultingState
             return resultingState, reward, self.isTerminalState(resultingState), None
         else:
             return self.agentPosition, reward, self.isTerminalState(self.agentPosition), None
@@ -164,30 +167,33 @@ class Park_Finder_Agent():
 
     def reset(self):
         self.agentPosition = 0
+        self.grid = self.parkingLotToArray()
         return self.agentPosition
     
     def actionSpaceSample(self):
         return np.random.choice(self.possibleActions)
     
 #%%    
-    
-    
-from IPython.display import clear_output
-from time import sleep
+
 
 def print_frames(frames):
     for i, frame in enumerate(frames):
         print(f"Timestep: {i + 1}")
-        print(f"State: {frame['observation']}")
+        print(f"State: {frame['state']}")
+        print(f"Resulting state: {frame['resulting state']}")
         print(f"Action: {frame['action']}")
         print(f"Reward: {frame['reward']}")
-        print('-----------------------------')
+        print('-------------')
         
 
     
 def maxAction(Q, state, actions):
     values = np.array([Q[state,a] for a in actions])
-    action = np.argmax(values)
+    if sum(values)==0:
+        print("picking random")
+        action = np.random.randint(0,4)
+    else:
+        action = np.argmax(values)
     return actions[action]
 
 if __name__ == '__main__':
@@ -195,46 +201,63 @@ if __name__ == '__main__':
 #    magicSquares = {18: 54, 63: 14}
     env = Park_Finder_Agent(parking_lot)
     # model hyperparameters
-    ALPHA = 0.01
-    GAMMA = 0.6
-    EPS = 0.4
-    frames = [] # for animation
+    ALPHA = 0.1
+    GAMMA = 1.0
+    EPS = 0.9
+    frames = [] # for information
 
     Q = {}
     for state in env.stateSpacePlus:
         for action in env.possibleActions:
             Q[state, action] = 0
 
-    numGames = 30
+    numGames = 10
     totalRewards = np.zeros(numGames)
     for i in range(numGames):
-        if i % 30 == 0:
+        if i % 5 == 0:
             print('starting game ', i)
         done = False
+        finish = False
         epRewards = 0
         observation = env.reset()
         while not done:
-            
+
             rand = np.random.random()
-            action = maxAction(Q,observation, env.possibleActions) if rand < (1-EPS) \
-                                                    else env.actionSpaceSample()
+            
+            action = maxAction(Q,observation, env.possibleActions) if rand > EPS else env.actionSpaceSample()
+            
+            
             observation_, reward, done, info = env.step(action)
+            resulting_state = observation+env.actionSpace[action]
+            print(env.actionSpace[action])
+            if observation_+env.actionSpace[action] in env.vacant_list:
+                finish = True
+                reward = 25
+            if observation_+env.actionSpace[action] in env.taken_list:
+                finish = True
+                reward = -300
             epRewards += reward
+            # print(epRewards)
 
             action_ = maxAction(Q, observation_, env.possibleActions)
-            Q[observation,action] = Q[observation,action] + ALPHA*(reward + \
-                        GAMMA*Q[observation_,action_] - Q[observation,action])
+            Q[observation,action] = Q[observation,action] + ALPHA*(reward + GAMMA*Q[observation_,action_] - Q[observation,action])
             observation = observation_
+            if finish:
+                print("start a new episode")
+                done = True
+            frames.append({'state': observation,'resulting state': resulting_state, 'action': action,'reward': reward})
+
             
         
-        frames.append({'observation': observation,'action': action,'reward': reward})
+        
         
         if EPS - 2 / numGames > 0:
             EPS -= 2 / numGames
         else:
             EPS = 0
         totalRewards[i] = epRewards
-        env.render()
+        if i % 100 ==0:
+            env.render()
         
         
     print(print_frames(frames))
