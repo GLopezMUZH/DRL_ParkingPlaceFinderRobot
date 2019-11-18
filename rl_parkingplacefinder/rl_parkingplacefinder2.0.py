@@ -33,7 +33,7 @@ WALL_CRASH_REWARD = -50
 TIME_REWARD = -0.25
 BACKWARD_REWARD = -40
 STUCK_REWARD = -30
-EPISODES = 50000
+EPISODES = 60000
 
 
 #%%
@@ -137,7 +137,7 @@ class Park_Finder_Agent():
         if resultingState in self.vacant_list and resultingState != max(self.vacant_list):
             return - (nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.parking_lot.nodes)))/40
         if resultingState == max(self.vacant_list):
-            return 50
+            return 1
         
         else:
             # reward of -400 for hitting the wall on the side of the parking lot
@@ -280,7 +280,7 @@ if __name__ == '__main__':
             resulting_state = observation+env.actionSpace[action]
             # print(env.actionSpace[action])
             
-            if reward > 1 or reward == PARK_CRASH_REWARD or reward == WALL_CRASH_REWARD:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
+            if reward >= 1 or reward == PARK_CRASH_REWARD or reward == WALL_CRASH_REWARD:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
                 if cv2.waitKey(50) & 0xFF == ord('q'):
                     break
             else:
