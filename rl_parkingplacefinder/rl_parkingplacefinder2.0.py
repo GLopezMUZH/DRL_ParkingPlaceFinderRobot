@@ -21,8 +21,6 @@ import networkx as nx
 from PIL import Image
 import cv2
 import scipy.misc
-import time
-from time import sleep
 
 # from rl_parkingplacefinder.Parking_lot import Parking_Lot as Parking_Lot
 parking_lot = nx.read_gpickle('/Users/pascal/Coding/DRL_ParkingPlaceFinderRobot/parking_lot.gpl')
@@ -35,6 +33,7 @@ WALL_CRASH_REWARD = -50
 TIME_REWARD = -0.25
 BACKWARD_REWARD = -40
 STUCK_REWARD = -30
+EPISODES = 50000
 
 
 #%%
@@ -136,7 +135,7 @@ class Park_Finder_Agent():
             return PARK_CRASH_REWARD
         # reward for a parking lot. If the distance to the exit is close, the reward is nearly 25. If the distance is far, reward gets smaller
         if resultingState in self.vacant_list and resultingState != max(self.vacant_list):
-            return 40/(nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.parking_lot.nodes)))**3
+            return - (nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.parking_lot.nodes)))/40
         if resultingState == max(self.vacant_list):
             return 50
         
@@ -247,12 +246,12 @@ if __name__ == '__main__':
         for action in env.possibleActions:
             Q[state, action] = 0
 
-    numEpisodes = 20000
+    numEpisodes = EPISODES
     totalRewards = np.zeros(numEpisodes)
     for i in range(numEpisodes):
         observation = env.agentPosition
         # Every xth episode we reset the car to position 0 and start again 
-        if i % 200 == 0:
+        if i % (EPISODES/100) == 0:
             # print('starting episode ', i)
             observation = env.reset()
         done = False
