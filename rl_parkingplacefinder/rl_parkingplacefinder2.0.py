@@ -15,17 +15,9 @@
 """
 #%%
 import numpy as np
-import numpy.random as rnd
 import collections
-
 import matplotlib.pylab as plt
-
-import time
-from datetime import datetime
-import math
-
 import networkx as nx
-import csv
 
 # from rl_parkingplacefinder.Parking_lot import Parking_Lot as Parking_Lot
 parking_lot = nx.read_gpickle('/Users/pascal/Coding/DRL_ParkingPlaceFinderRobot/parking_lot.gpl')
@@ -47,7 +39,6 @@ class Park_Finder_Agent():
         self.parking_lot = parking_lot
         self.m = self.get_parking_lot_width()
         self.n = self.get_parking_lot_length()
-                
         self.actionSpace = {'U': -self.m, 'D': self.m, 'L': -1, 'R': 1}
         self.possibleActions = ['U', 'D', 'L', 'R']
         self.taken_list = []
@@ -63,7 +54,6 @@ class Park_Finder_Agent():
                 self.drive_list.append(i)
         self.stateSpacePlus = self.drive_list
         self.stateSpace = self.vacant_list + self.taken_list
-        # self.grid = np.zeros((self.m,self.n))
         self.agentPosition = 0
         self.grid = self.parkingLotToArray()
         
@@ -103,22 +93,26 @@ class Park_Finder_Agent():
     
     
     def setState(self, state):
-        # where agent was make it driveway again
+        # where agent was, make it driveway again
         x, y = self.getAgentRowAndColumn()
         self.grid[x][y] = 1
-        # where agent is make square
+        # where agent is, make square
         self.agentPosition = state
         x, y = self.getAgentRowAndColumn()
         self.grid[x][y] = 3
         
     def getReward(self, resultingState):
+        # reward of -1 for wasting time and driving around
         if resultingState in self.drive_list:
             return -1
+        # reward of -300 of crashing in a parked car
         if resultingState in self.taken_list:
             return -300
+        # reward for a parking lot. If the distance to the exit is close, the reward is nearly 25. If the distance is far, reward gets smaller
         if resultingState in self.vacant_list:
             return  25 / nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.parking_lot.nodes))
         else:
+            # reward of -400 for hitting the wall on the side of the parking lot
             return -400
         
         
@@ -189,16 +183,17 @@ def print_frames(frames):
     
 def maxAction(Q, state, actions):
     values = np.array([Q[state,a] for a in actions])
+    # if all the values are 0 in the Q table, pick random an action (otherwise it would always chose the first one)
     if sum(values)==0:
         print("picking random")
         action = np.random.randint(0,4)
     else:
+        # if there is already something learned, pick the one which has the highest reward attached to it
         action = np.argmax(values)
     return actions[action]
 
 if __name__ == '__main__':
-    # map magic squares to their connecting square
-#    magicSquares = {18: 54, 63: 14}
+
     env = Park_Finder_Agent(parking_lot)
     # model hyperparameters
     ALPHA = 0.1
@@ -211,11 +206,12 @@ if __name__ == '__main__':
         for action in env.possibleActions:
             Q[state, action] = 0
 
-    numGames = 10
-    totalRewards = np.zeros(numGames)
-    for i in range(numGames):
+    numEpisodes = 10
+    totalRewards = np.zeros(numEpisodes)
+    for i in range(numEpisodes):
+        # Every xth episode we reset the car to position 0 and start again 
         if i % 5 == 0:
-            print('starting game ', i)
+            print('starting episode ', i)
         done = False
         finish = False
         epRewards = 0
@@ -228,6 +224,8 @@ if __name__ == '__main__':
             
             
             observation_, reward, done, info = env.step(action)
+            
+            # making sure that when parking lot was reached or a crash with a parked car occures, we terminate this episode (just experimental, should be handled in the getReward function)
             resulting_state = observation+env.actionSpace[action]
             print(env.actionSpace[action])
             if observation_+env.actionSpace[action] in env.vacant_list:
@@ -251,8 +249,8 @@ if __name__ == '__main__':
         
         
         
-        if EPS - 2 / numGames > 0:
-            EPS -= 2 / numGames
+        if EPS - 2 / numEpisodes > 0:
+            EPS -= 2 / numEpisodes
         else:
             EPS = 0
         totalRewards[i] = epRewards
