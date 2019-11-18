@@ -119,7 +119,6 @@ class Park_Finder_Agent():
     def step(self, action):
         # agentX, agentY = self.getAgentRowAndColumn()
         resultingState = self.agentPosition + self.actionSpace[action]
-        print(resultingState)
 
         reward = self.getReward(resultingState)
         if resultingState == self.agentPosition:
@@ -198,7 +197,7 @@ if __name__ == '__main__':
     # model hyperparameters
     ALPHA = 0.1
     GAMMA = 1.0
-    EPS = 0.9
+    EPS = 0.4
     frames = [] # for information
 
     Q = {}
@@ -206,16 +205,18 @@ if __name__ == '__main__':
         for action in env.possibleActions:
             Q[state, action] = 0
 
-    numEpisodes = 10
+    numEpisodes = 300
     totalRewards = np.zeros(numEpisodes)
     for i in range(numEpisodes):
+        observation = env.agentPosition
         # Every xth episode we reset the car to position 0 and start again 
-        if i % 5 == 0:
+        if i % 30 == 0:
             print('starting episode ', i)
+            observation = env.reset()
         done = False
         finish = False
         epRewards = 0
-        observation = env.reset()
+        
         while not done:
 
             rand = np.random.random()
@@ -227,23 +228,24 @@ if __name__ == '__main__':
             
             # making sure that when parking lot was reached or a crash with a parked car occures, we terminate this episode (just experimental, should be handled in the getReward function)
             resulting_state = observation+env.actionSpace[action]
-            print(env.actionSpace[action])
-            if observation_+env.actionSpace[action] in env.vacant_list:
-                finish = True
-                reward = 25
-            if observation_+env.actionSpace[action] in env.taken_list:
-                finish = True
-                reward = -300
-            epRewards += reward
+            # print(env.actionSpace[action])
+            # if observation_+env.actionSpace[action] in env.vacant_list:
+            #     finish = True
+            #     reward = 25
+            # if observation_+env.actionSpace[action] in env.taken_list:
+            #     finish = True
+            #     reward = -300
+            # epRewards += reward
             # print(epRewards)
 
             action_ = maxAction(Q, observation_, env.possibleActions)
             Q[observation,action] = Q[observation,action] + ALPHA*(reward + GAMMA*Q[observation_,action_] - Q[observation,action])
             observation = observation_
-            if finish:
-                print("start a new episode")
-                done = True
+            # if finish:
+            #     print("start a new episode")
+            #     done = True
             frames.append({'state': observation,'resulting state': resulting_state, 'action': action,'reward': reward})
+            env.render()
 
             
         
@@ -254,8 +256,8 @@ if __name__ == '__main__':
         else:
             EPS = 0
         totalRewards[i] = epRewards
-        if i % 100 ==0:
-            env.render()
+        # if i % 100 ==0:
+        #     env.render()
         
         
     print(print_frames(frames))
