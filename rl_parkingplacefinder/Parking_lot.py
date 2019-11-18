@@ -231,4 +231,4 @@ class Parking_Lot():
             writer.writerows(data)
 
     def export_to_pickle(self):
-        nx.write_gpickle(self.g,'parking_lot.gpl')
+        nx.write_gpickle(self.g,'parking_lot_big.gpl')

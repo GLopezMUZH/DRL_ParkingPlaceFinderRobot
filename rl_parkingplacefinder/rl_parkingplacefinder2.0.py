@@ -18,21 +18,37 @@ import numpy as np
 import collections
 import matplotlib.pylab as plt
 import networkx as nx
+from PIL import Image
+import cv2
+import scipy.misc
+import time
+from time import sleep
 
 # from rl_parkingplacefinder.Parking_lot import Parking_Lot as Parking_Lot
 parking_lot = nx.read_gpickle('/Users/pascal/Coding/DRL_ParkingPlaceFinderRobot/parking_lot.gpl')
 
 
 # %%
-"""
-class ParkingPlaceFinderModel():
-    This is the general class to run a reinforcement learning parking place finder experiment
-    Parameters:
-    def __init__(self):
-        self.id_name = ""
-        self.rl_strategy = ""
-"""
 
+PARK_CRASH_REWARD = -50
+WALL_CRASH_REWARD = -50
+TIME_REWARD = -0.25
+BACKWARD_REWARD = -40
+STUCK_REWARD = -30
+
+
+#%%
+"""
+TODO:
+    - EWhat is the best option to combine optimization for 1) reward of parking lot 2) walking distance 3) parking distance
+    - Enable rendering with agent on the terminal state for better understanding
+    - After maximizing reward (very early) agent somehow still goes for smaller rewards and sticks to close parking slots in the end
+    - Allow agent only to drive straight into parking lot
+
+
+
+
+"""
 # %%
 class Park_Finder_Agent():
     def __init__(self, parking_lot):
@@ -52,7 +68,7 @@ class Park_Finder_Agent():
                     self.vacant_list.append(i)
             else:
                 self.drive_list.append(i)
-        self.stateSpacePlus = self.drive_list
+        self.stateSpacePlus = self.drive_list #+ self.vacant_list + self.taken_list
         self.stateSpace = self.vacant_list + self.taken_list
         self.agentPosition = 0
         self.grid = self.parkingLotToArray()
@@ -70,21 +86,26 @@ class Park_Finder_Agent():
         return int(len(self.parking_lot.nodes)/self.get_parking_lot_width())
      
     def parkingLotToArray(self):
-        parking_lot_indices = np.array_split(self.parking_lot.nodes, 7)
+        parking_lot_indices = np.array_split(self.parking_lot.nodes, self.m)
         grid = np.zeros((self.m,self.n))
         for i in range(0,self.m):
             for k in range(0,self.n):
                 if self.parking_lot.node[parking_lot_indices[i][k]]['slot_type'] == 'drive':
                     grid[i][k] = 1
                 if self.parking_lot.node[parking_lot_indices[i][k]]['slot_type'] == 'park' and self.parking_lot.node[parking_lot_indices[i][k]]['occupation'] == 'vacant':
-                    grid[i][k] = 0
-                if self.parking_lot.node[parking_lot_indices[i][k]]['slot_type'] == 'park' and self.parking_lot.node[parking_lot_indices[i][k]]['occupation'] == 'taken':
                     grid[i][k] = 2
+                if self.parking_lot.node[parking_lot_indices[i][k]]['slot_type'] == 'park' and self.parking_lot.node[parking_lot_indices[i][k]]['occupation'] == 'taken':
+                    grid[i][k] = 0
         return grid
                 
                 
     def isTerminalState(self, state):
         return state in self.stateSpacePlus and state not in self.stateSpace
+    
+    def getElementRowAndColumn(self, position):
+        x = position // self.m
+        y = position % self.n
+        return x, y
 
     def getAgentRowAndColumn(self):
         x = self.agentPosition // self.m
@@ -101,31 +122,38 @@ class Park_Finder_Agent():
         x, y = self.getAgentRowAndColumn()
         self.grid[x][y] = 3
         
-    def getReward(self, resultingState):
+    def getReward(self, actualState, resultingState):
         # reward of -1 for wasting time and driving around
         if resultingState in self.drive_list:
-            return -1
+            if resultingState < actualState:
+                return BACKWARD_REWARD
+            if resultingState == actualState:
+                return STUCK_REWARD
+            else:
+                return TIME_REWARD
         # reward of -300 of crashing in a parked car
         if resultingState in self.taken_list:
-            return -300
+            return PARK_CRASH_REWARD
         # reward for a parking lot. If the distance to the exit is close, the reward is nearly 25. If the distance is far, reward gets smaller
-        if resultingState in self.vacant_list:
-            return  25 / nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.parking_lot.nodes))
+        if resultingState in self.vacant_list and resultingState != max(self.vacant_list):
+            return 40/(nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.parking_lot.nodes)))**3
+        if resultingState == max(self.vacant_list):
+            return 50
+        
         else:
             # reward of -400 for hitting the wall on the side of the parking lot
-            return -400
+            return WALL_CRASH_REWARD
         
         
     def step(self, action):
         # agentX, agentY = self.getAgentRowAndColumn()
         resultingState = self.agentPosition + self.actionSpace[action]
 
-        reward = self.getReward(resultingState)
-        if resultingState == self.agentPosition:
-            reward = -200
+        reward = self.getReward(self.agentPosition,resultingState)
+
         if not self.offGridMove(resultingState, self.agentPosition):
             self.setState(resultingState)
-            self.agentPosition = resultingState
+            # self.agentPosition = resultingState
             return resultingState, reward, self.isTerminalState(resultingState), None
         else:
             return self.agentPosition, reward, self.isTerminalState(self.agentPosition), None
@@ -148,14 +176,19 @@ class Park_Finder_Agent():
             for col in row:
                 if col == 1:
                     print('.', end='\t')
-                elif col == 0:
-                    print('O', end='\t')
                 elif col == 2:
+                    print('O', end='\t')
+                elif col == 0:
                     print('X', end='\t')
                 elif col == 3:
                     print('█', end='\t')
             print('\n')
         print('---------------------------------------------Exit')
+        
+    def renderToFile(self):
+        H = self.grid
+        plt.imshow(H)
+        plt.show()
 
 
     def reset(self):
@@ -166,7 +199,10 @@ class Park_Finder_Agent():
     def actionSpaceSample(self):
         return np.random.choice(self.possibleActions)
     
-#%%    
+
+    
+#%%
+        
 
 
 def print_frames(frames):
@@ -174,8 +210,12 @@ def print_frames(frames):
         print(f"Timestep: {i + 1}")
         print(f"State: {frame['state']}")
         print(f"Resulting state: {frame['resulting state']}")
+        print(f"previous state(s): {frame['state history']}")
         print(f"Action: {frame['action']}")
         print(f"Reward: {frame['reward']}")
+        print(f"Found parking: {frame['new start']}")
+        print(f"Walking distance: {frame['walk distance']}")
+        print(f"Driving distance: {frame['drive distance']}")
         print('-------------')
         
 
@@ -193,31 +233,36 @@ def maxAction(Q, state, actions):
 
 if __name__ == '__main__':
 
+
     env = Park_Finder_Agent(parking_lot)
     # model hyperparameters
     ALPHA = 0.1
     GAMMA = 1.0
-    EPS = 0.4
+    EPS = 0.9
     frames = [] # for information
+    fig = plt.figure()
 
     Q = {}
     for state in env.stateSpacePlus:
         for action in env.possibleActions:
             Q[state, action] = 0
 
-    numEpisodes = 300
+    numEpisodes = 20000
     totalRewards = np.zeros(numEpisodes)
     for i in range(numEpisodes):
         observation = env.agentPosition
         # Every xth episode we reset the car to position 0 and start again 
-        if i % 30 == 0:
-            print('starting episode ', i)
+        if i % 200 == 0:
+            # print('starting episode ', i)
             observation = env.reset()
         done = False
-        finish = False
+        show = True
+        
         epRewards = 0
+        history = [0]
         
         while not done:
+            finish = False
 
             rand = np.random.random()
             
@@ -226,31 +271,50 @@ if __name__ == '__main__':
             
             observation_, reward, done, info = env.step(action)
             
+            if show:
+                img = scipy.misc.toimage(env.grid)
+                img = img.resize((750, 750))  # resizing so we can see our agent in all its glory.
+                
+                cv2.imshow("Parking Agent", np.array(img))
+            
             # making sure that when parking lot was reached or a crash with a parked car occures, we terminate this episode (just experimental, should be handled in the getReward function)
             resulting_state = observation+env.actionSpace[action]
             # print(env.actionSpace[action])
-            # if observation_+env.actionSpace[action] in env.vacant_list:
-            #     finish = True
+            
+            if reward > 1 or reward == PARK_CRASH_REWARD or reward == WALL_CRASH_REWARD:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
+                if cv2.waitKey(50) & 0xFF == ord('q'):
+                    break
+            else:
+                if cv2.waitKey(1) & 0x7F == ord('q'):
+                    break
+            # time.sleep(0.001)
+                
+            if observation_+env.actionSpace[action] in env.vacant_list:
+                finish = True
             #     reward = 25
-            # if observation_+env.actionSpace[action] in env.taken_list:
-            #     finish = True
+            if observation_+env.actionSpace[action] in env.taken_list:
+                finish = True
             #     reward = -300
-            # epRewards += reward
+            epRewards += reward
             # print(epRewards)
 
             action_ = maxAction(Q, observation_, env.possibleActions)
             Q[observation,action] = Q[observation,action] + ALPHA*(reward + GAMMA*Q[observation_,action_] - Q[observation,action])
+            history.append(observation_)
             observation = observation_
-            # if finish:
-            #     print("start a new episode")
-            #     done = True
-            frames.append({'state': observation,'resulting state': resulting_state, 'action': action,'reward': reward})
-            env.render()
-
-            
-        
-        
-        
+            if finish:
+                # print("start a new episode")
+                done = True
+                env.reset()
+                history.append(resulting_state)
+            if resulting_state in env.vacant_list+env.taken_list+env.drive_list:
+                walk_distance = nx.shortest_path_length(parking_lot,source=resulting_state,target=max(env.parking_lot.nodes))
+                drive_distance = nx.shortest_path_length(parking_lot,source=0,target=resulting_state)
+            else:
+                walk_distance = False
+                drive_distance = False
+                
+            frames.append({'state': observation,'resulting state': resulting_state,'state history':history, 'action': action,'reward': reward, 'new start': done,'walk distance': walk_distance, 'drive distance':drive_distance})
         if EPS - 2 / numEpisodes > 0:
             EPS -= 2 / numEpisodes
         else:
