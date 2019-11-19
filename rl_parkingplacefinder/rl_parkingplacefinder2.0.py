@@ -28,18 +28,21 @@ parking_lot = nx.read_gpickle('/Users/pascal/Coding/DRL_ParkingPlaceFinderRobot/
 
 # %%
 
-PARK_CRASH_REWARD = -50
-WALL_CRASH_REWARD = -50
-TIME_REWARD = -0.25
+PARK_CRASH_REWARD = -200
+WALL_CRASH_REWARD = -200
+TIME_REWARD = -0.001
 BACKWARD_REWARD = -40
 STUCK_REWARD = -30
+PARKING_REWARD = 0.1
 EPISODES = 60000
+show = False
 
 
 #%%
 """
 TODO:
-    - EWhat is the best option to combine optimization for 1) reward of parking lot 2) walking distance 3) parking distance
+    - Balance rewards
+    - What is the best option to combine optimization for 1) reward of parking lot 2) walking distance 3) parking distance
     - Enable rendering with agent on the terminal state for better understanding
     - After maximizing reward (very early) agent somehow still goes for smaller rewards and sticks to close parking slots in the end
     - Allow agent only to drive straight into parking lot
@@ -135,15 +138,15 @@ class Park_Finder_Agent():
             return PARK_CRASH_REWARD
         # reward for a parking lot. If the distance to the exit is close, the reward is nearly 25. If the distance is far, reward gets smaller
         if resultingState in self.vacant_list and resultingState != max(self.vacant_list):
-            return - (nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.parking_lot.nodes)))/40
+            return -(nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.vacant_list)))**2/max(self.vacant_list)
         if resultingState == max(self.vacant_list):
-            return 1
-        else:
-            return 0
-        
+            return PARKING_REWARD
         # else:
-        #     # reward of -400 for hitting the wall on the side of the parking lot
-        #     return WALL_CRASH_REWARD
+        #     return 0
+        
+        else:
+            # reward of -400 for hitting the wall on the side of the parking lot
+            return WALL_CRASH_REWARD
         
         
     def step(self, action):
@@ -266,23 +269,16 @@ if __name__ == '__main__':
             finish = False
 
             rand = np.random.random()
-            
             action = maxAction(Q,observation, env.possibleActions) if rand > EPS else env.actionSpaceSample()
-            
-            
             observation_, reward, done, info = env.step(action)
             
-            if show:
-                img = scipy.misc.toimage(env.grid)
-                img = img.resize((750, 750))  # resizing so we can see our agent in all its glory.
-                
-                cv2.imshow("Parking Agent", np.array(img))
+            
             
             # making sure that when parking lot was reached or a crash with a parked car occures, we terminate this episode (just experimental, should be handled in the getReward function)
             resulting_state = observation+env.actionSpace[action]
             # print(env.actionSpace[action])
             
-            if reward >= 1 or reward == PARK_CRASH_REWARD or reward == WALL_CRASH_REWARD:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
+            if reward == -(nx.shortest_path_length(parking_lot,source=env.agentPosition,target=max(env.vacant_list)))**2/max(env.vacant_list) or reward == PARK_CRASH_REWARD or reward == WALL_CRASH_REWARD:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
                 if cv2.waitKey(50) & 0xFF == ord('q'):
                     break
             else:
@@ -304,16 +300,30 @@ if __name__ == '__main__':
             history.append(observation_)
             observation = observation_
             if finish:
-                # print("start a new episode")
+                print("start a new episode")
                 done = True
                 env.reset()
                 history.append(resulting_state)
-            if resulting_state in env.vacant_list+env.taken_list+env.drive_list:
+            if resulting_state in env.vacant_list:
+                print('Found parking lot: {}, {}, {}'.format(resulting_state,parking_lot.nodes[resulting_state]['occupation'],epRewards))
                 walk_distance = nx.shortest_path_length(parking_lot,source=resulting_state,target=max(env.parking_lot.nodes))
                 drive_distance = nx.shortest_path_length(parking_lot,source=0,target=resulting_state)
+                
             else:
                 walk_distance = False
                 drive_distance = False
+            
+            if show:
+                # grid = np.where(env.grid==1, 128, env.grid)
+                # grid = np.where(grid==2, 255, grid)
+                # grid = np.where(grid==3, 255, grid)
+                # img = Image.fromarray(grid,mode='L')
+                img = scipy.misc.toimage(env.grid)
+                img = img.resize((500, 500))  # resizing so we can see our agent in all its glory.
+                # font = cv2.FONT_HERSHEY_SIMPLEX
+                # img = cv2.copyMakeBorder(img, 10, 200, 10, 10, cv2.BORDER_CONSTANT)
+                # cv2.putText(img,frame,(10,600), font, 2,(0,0,255),2,cv2.LINE_AA)
+                cv2.imshow("Parking Agent", np.array(img))
                 
             frames.append({'state': observation,'resulting state': resulting_state,'state history':history, 'action': action,'reward': reward, 'new start': done,'walk distance': walk_distance, 'drive distance':drive_distance})
         if EPS - 2 / numEpisodes > 0:
