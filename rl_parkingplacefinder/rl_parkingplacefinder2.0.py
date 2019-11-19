@@ -138,10 +138,12 @@ class Park_Finder_Agent():
             return - (nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.parking_lot.nodes)))/40
         if resultingState == max(self.vacant_list):
             return 1
-        
         else:
-            # reward of -400 for hitting the wall on the side of the parking lot
-            return WALL_CRASH_REWARD
+            return 0
+        
+        # else:
+        #     # reward of -400 for hitting the wall on the side of the parking lot
+        #     return WALL_CRASH_REWARD
         
         
     def step(self, action):
