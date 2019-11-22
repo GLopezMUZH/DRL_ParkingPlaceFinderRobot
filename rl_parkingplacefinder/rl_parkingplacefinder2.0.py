@@ -34,7 +34,7 @@ TIME_REWARD = -0.001
 BACKWARD_REWARD = -40
 STUCK_REWARD = -30
 PARKING_REWARD = 0.1
-EPISODES = 60000
+EPISODES = 80000
 show = False
 
 
@@ -253,6 +253,7 @@ if __name__ == '__main__':
 
     numEpisodes = EPISODES
     totalRewards = np.zeros(numEpisodes)
+    learningRewards = np.zeros(numEpisodes)
     for i in range(numEpisodes):
         observation = env.agentPosition
         # Every xth episode we reset the car to position 0 and start again 
@@ -330,13 +331,17 @@ if __name__ == '__main__':
             EPS -= 2 / numEpisodes
         else:
             EPS = 0
+        if epRewards > -10:
+            learningRewards[i] = epRewards
+            
         totalRewards[i] = epRewards
         # if i % 100 ==0:
         #     env.render()
         
         
     print(print_frames(frames))
-    plt.plot(totalRewards)
+    # plt.plot(totalRewards)
+    plt.plot(learningRewards)
     plt.show()
 
         
