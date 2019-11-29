@@ -23,7 +23,7 @@ import cv2
 import scipy.misc
 
 # from rl_parkingplacefinder.Parking_lot import Parking_Lot as Parking_Lot
-parking_lot = nx.read_gpickle('/Users/pascal/Coding/DRL_ParkingPlaceFinderRobot/parking_lot.gpl')
+parking_lot = nx.read_gpickle('C:/Users/glopez/uzh_stuff/DeepReinforcementLearning/DRL_ParkingPlaceFinderRobot/parking_lot.gpl')
 
 
 # %%
