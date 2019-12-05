@@ -80,15 +80,15 @@ class Parking_Lot():
         self.nr_slots_per_lane = self.nr_parking_slots_per_lane+2
         self.nr_lanes_total =  self.get_number_of_lanes()
         self.nr_slots_total = self.nr_slots_per_lane*self.nr_lanes_total
-        self.printDebug('number_of_lanes='+str(self.nr_lanes_total))
-        self.printDebug('number_of_slots='+str(self.nr_slots_total))
+        # self.printDebug('number_of_lanes='+str(self.nr_lanes_total))
+        # self.printDebug('number_of_slots='+str(self.nr_slots_total))
         self.create_parking_geography()
         # update occupied places
         self.filling_function_parameters = filling_function_parameters
         self.fill_parking_slots()
         # set lane directions TODO
         #self.set_lane_directions()
-        self.export_to_pickle()
+        #self.export_to_pickle()
 
         if draw_graph:
             self.plot()
@@ -232,3 +232,6 @@ class Parking_Lot():
 
     def export_to_pickle(self):
         nx.write_gpickle(self.g,'parking_lot_big.gpl')
+
+    def get_env(self):
+        return self.g
