@@ -22,7 +22,7 @@ class ReplayBuffer(object):
         # store one hot encoding of actions, if appropriate
         if self.discrete:
             actions = np.zeros(self.action_memory.shape[1])
-            actions[action] = 1.0
+            actions[action-1] = 1.0
             self.action_memory[index] = actions
         else:
             self.action_memory[index] = action
@@ -58,7 +58,7 @@ class Agent(object):
     def __init__(self, alpha, gamma, n_actions, epsilon, batch_size,
                  input_dims, epsilon_dec=0.996,  epsilon_end=0.01,
                  mem_size=1000000, fname='dqn_model.h5'):
-        self.action_space = [i for i in range(n_actions)]
+        self.action_space = [i+1 for i in range(n_actions)]
         self.gamma = gamma
         self.epsilon = epsilon
         self.epsilon_dec = epsilon_dec
@@ -85,11 +85,11 @@ class Agent(object):
 
     def learn(self):
         if self.memory.mem_cntr > self.batch_size:
-            state, action, reward, new_state, done = \
-                                          self.memory.sample_buffer(self.batch_size)
+            state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
 
             action_values = np.array(self.action_space, dtype=np.int8)
             action_indices = np.dot(action, action_values)
+            action_indices -= 1
 
             q_eval = self.q_eval.predict(state)
 
@@ -99,13 +99,11 @@ class Agent(object):
 
             batch_index = np.arange(self.batch_size, dtype=np.int32)
 
-            q_target[batch_index, action_indices] = reward + \
-                                  self.gamma*np.max(q_next, axis=1)*done
+            q_target[batch_index, action_indices] = reward + self.gamma*np.max(q_next, axis=1)*done
 
             _ = self.q_eval.fit(state, q_target, verbose=0)
 
-            self.epsilon = self.epsilon*self.epsilon_dec if self.epsilon > \
-                           self.epsilon_min else self.epsilon_min
+            self.epsilon = self.epsilon*self.epsilon_dec if self.epsilon > self.epsilon_min else self.epsilon_min
 
     def save_model(self):
         self.q_eval.save(self.model_file)

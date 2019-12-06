@@ -268,7 +268,11 @@ def maxAction(Q, state, actions):
         # if there is already something learned, pick the one which has the highest reward attached to it
         action = np.argmax(values)
     return actions[action]
-"""
+
+
+
+
+
 if __name__ == '__main__':
 
 
@@ -376,49 +380,3 @@ if __name__ == '__main__':
     # plt.plot(totalRewards)
     plt.plot(learningRewards)
     plt.show()
-
-"""
-                    
-#%%
-
-    # def find_parking(self, parking_lot :  Parking_Lot):
-    #     # if True: let an agent run through the created parking lot and park in the first available parking spot
-
-    #     curr_pos = 0 # stores current position of agent, currently always starts on node 0
-    #     status = 'moving' # movement status of agent
-    #     step = 0 # counts number of steps agent takes until it parks
-    #     print("History:")
-
-    #     while status == 'moving':
-    #         step += 1
-
-    #         # get all neighboring nodes ("possible ways to drive")
-    #         options = list(parking_lot.g.neighbors(curr_pos))
-    #         print(f"Step {step}: Currently on node {curr_pos}")
-
-    #         # check if parking spot is vacant and park on it if yes
-    #         for spot in options:
-    #             if parking_lot.g.nodes[spot]['slot_type'] == 'park' and parking_lot.g.nodes[spot]['occupation'] == 'vacant':
-    #                 curr_pos = spot
-    #                 status = 'parked'
-    #                 print(f"We park in Spot {curr_pos} after {step} steps")
-    #                 break
-
-    #         # update the status of the parking slot
-    #         if (status == 'parked'):
-    #             parking_lot.g.nodes[curr_pos]['occupation'] = 'taken'
-    #             parking_lot.node_color_map[curr_pos]='red'
-    #             # unelegant return but for efficiency
-    #             return curr_pos
-
-    #         # if no parking spot is vacant: restrict set of options to driveway nodes and randomly continue
-    #         options = [spot for spot in options if parking_lot.g.nodes[spot]['slot_type'] == 'drive']
-    #         curr_pos = rnd.choice(options)
-
-
-
-
-
-
-
-#%%
