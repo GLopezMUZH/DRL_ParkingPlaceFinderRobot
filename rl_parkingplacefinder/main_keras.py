@@ -6,7 +6,7 @@ import numpy as np
 
 if __name__ == '__main__':
     env = Park_Finder_Agent()
-    n_episodes = 1
+    n_episodes = 500
     agent = Agent(gamma=0.99, epsilon=1.0, alpha=0.0005, input_dims=12,
                   n_actions=4, mem_size=1000, batch_size=64, epsilon_end=0.1)
 

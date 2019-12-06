@@ -46,10 +46,11 @@ parking_lot = parking_environment.get_env()
 
 PARK_CRASH_REWARD = -200
 WALL_CRASH_REWARD = -200
-TIME_REWARD = -0.001
+TIME_REWARD = -1
 BACKWARD_REWARD = -40
 STUCK_REWARD = -30
-PARKING_REWARD = 0.1
+PARKING_REWARD = 100
+DRIVEWAY_PARKING_REWARD = -100
 EPISODES = 80000
 show = True
 
@@ -73,9 +74,9 @@ class Park_Finder_Agent():
         self.parking_lot = parking_environment.get_env()
         self.m = self.get_parking_lot_width()
         self.n = self.get_parking_lot_length()
-        # 1 = UP, 2 = Down, 3 = Left, 4 = Right
-        self.actionSpace = {1: -self.m, 2: self.m, 3: -1, 4: 1}
-        self.possibleActions = [1, 2, 3, 4]
+        # 1 = UP, 2 = Down, 3 = Left, 4 = Right, 5 = Park
+        self.actionSpace = {1: -self.m, 2: self.m, 3: -1, 4: 1, 5: 0}
+        self.possibleActions = [1, 2, 3, 4, 5]
         self.taken_list = []
         self.vacant_list = []
         self.drive_list = []
@@ -87,8 +88,8 @@ class Park_Finder_Agent():
                     self.vacant_list.append(i)
             else:
                 self.drive_list.append(i)
-        self.stateSpacePlus = self.drive_list
-        self.stateSpace = self.vacant_list + self.taken_list
+        self.stateSpace = self.drive_list + self.vacant_list
+        self.stateSpacePlus = self.drive_list + self.vacant_list + self.taken_list
         self.agentPosition = 0
         self.grid = self.parkingLotToArray()
         
@@ -118,8 +119,9 @@ class Park_Finder_Agent():
         return grid
                 
                 
-    def isTerminalState(self, state):
-        return state in self.stateSpacePlus and state not in self.stateSpace
+    def isTerminalState(self, state, action):
+        return state in self.vacant_list and action == 5
+        # return state in self.stateSpacePlus and state not in self.stateSpace
     
     def getElementRowAndColumn(self, position):
         x = position // self.m
@@ -147,7 +149,7 @@ class Park_Finder_Agent():
             if resultingState < actualState:
                 return BACKWARD_REWARD
             if resultingState == actualState:
-                return STUCK_REWARD
+                return DRIVEWAY_PARKING_REWARD
             else:
                 return TIME_REWARD
         # reward of -300 of crashing in a parked car
@@ -175,9 +177,9 @@ class Park_Finder_Agent():
         if not self.offGridMove(resultingState, self.agentPosition):
             self.setState(resultingState)
             # self.agentPosition = resultingState
-            return resultingState, reward, self.isTerminalState(resultingState), None
+            return resultingState, reward, self.isTerminalState(resultingState, action), None
         else:
-            return self.agentPosition, reward, self.isTerminalState(self.agentPosition), None
+            return self.agentPosition, reward, self.isTerminalState(self.agentPosition, action), None
 
 
     def offGridMove(self, newState, oldState):
@@ -322,12 +324,12 @@ if __name__ == '__main__':
                     break
             # time.sleep(0.001)
 
-            if observation_+env.actionSpace[action] in env.vacant_list:
+            if observation_+env.actionSpace[action] in env.vacant_list and action == 5:
                 finish = True
             #     reward = 25
-            if observation_+env.actionSpace[action] in env.taken_list:
-                finish = True
-            #     reward = -300
+            # if observation_+env.actionSpace[action] in env.taken_list:
+            #     finish = True
+            #     # reward = -300
             epRewards += reward
             # print(epRewards)
 
@@ -335,15 +337,16 @@ if __name__ == '__main__':
             Q[observation,action] = Q[observation,action] + ALPHA*(reward + GAMMA*Q[observation_,action_] - Q[observation,action])
             history.append(observation_)
             observation = observation_
+
+            if resulting_state in env.vacant_list and action == 5:
+                print('Found parking lot: {}, {}, {}, {}'.format(i, resulting_state,parking_lot.nodes[resulting_state]['occupation'],epRewards))
+                walk_distance = nx.shortest_path_length(parking_lot,source=resulting_state,target=max(env.parking_lot.nodes))
+                drive_distance = nx.shortest_path_length(parking_lot,source=0,target=resulting_state)
             if finish:
                 print("start a new episode")
                 done = True
                 env.reset()
                 history.append(resulting_state)
-            if resulting_state in env.vacant_list:
-                print('Found parking lot: {}, {}, {}'.format(resulting_state,parking_lot.nodes[resulting_state]['occupation'],epRewards))
-                walk_distance = nx.shortest_path_length(parking_lot,source=resulting_state,target=max(env.parking_lot.nodes))
-                drive_distance = nx.shortest_path_length(parking_lot,source=0,target=resulting_state)
 
             else:
                 walk_distance = False

@@ -87,7 +87,7 @@ class Park_Finder_Agent():
                     self.vacant_list.append(i)
             else:
                 self.drive_list.append(i)
-        self.stateSpacePlus = self.vacant_list + self.taken_list
+        self.stateSpacePlus = self.drive_list +  self.vacant_list + self.taken_list
         self.stateSpace = self.drive_list
         self.agentPosition = 0
         self.grid = self.parkingLotToArray()
