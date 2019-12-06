@@ -51,7 +51,7 @@ BACKWARD_REWARD = -40
 STUCK_REWARD = -30
 PARKING_REWARD = 100
 DRIVEWAY_PARKING_REWARD = -100
-EPISODES = 80000
+EPISODES = 55000
 show = True
 
 
@@ -280,7 +280,7 @@ if __name__ == '__main__':
     # model hyperparameters
     ALPHA = 0.1
     GAMMA = 1.0
-    EPS = 0.9
+    EPS = 1.0
     frames = [] # for information
     fig = plt.figure()
 
@@ -307,7 +307,7 @@ if __name__ == '__main__':
             finish = False
 
             rand = np.random.random()
-            action = maxAction(Q, observation, env.possibleActions) if rand > EPS else env.actionSpaceSample()
+            action = maxAction(Q, observation, env.possibleActions) if rand < (1-EPS) else env.actionSpaceSample()
             observation_, reward, done, info = env.step(action)
 
 
@@ -339,7 +339,7 @@ if __name__ == '__main__':
             observation = observation_
 
             if resulting_state in env.vacant_list and action == 5:
-                print('Found parking lot: {}, {}, {}, {}'.format(i, resulting_state,parking_lot.nodes[resulting_state]['occupation'],epRewards))
+                print('Found parking lot in episode: {}, parked on {} which is {} and got a reward of {}'.format(i, resulting_state,parking_lot.nodes[resulting_state]['occupation'],epRewards))
                 walk_distance = nx.shortest_path_length(parking_lot,source=resulting_state,target=max(env.parking_lot.nodes))
                 drive_distance = nx.shortest_path_length(parking_lot,source=0,target=resulting_state)
             if finish:
