@@ -73,8 +73,9 @@ class Park_Finder_Agent():
         self.parking_lot = parking_environment.get_env()
         self.m = self.get_parking_lot_width()
         self.n = self.get_parking_lot_length()
-        self.actionSpace = {'U': -self.m, 'D': self.m, 'L': -1, 'R': 1}
-        self.possibleActions = ['U', 'D', 'L', 'R']
+        # 1 = UP, 2 = Down, 3 = Left, 4 = Right
+        self.actionSpace = {1: -self.m, 2: self.m, 3: -1, 4: 1}
+        self.possibleActions = [1, 2, 3, 4]
         self.taken_list = []
         self.vacant_list = []
         self.drive_list = []
