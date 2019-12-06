@@ -101,7 +101,7 @@ class Agent(object):
 
             q_target[batch_index, action_indices] = reward + self.gamma*np.max(q_next, axis=1)*done
 
-            _ = self.q_eval.fit(state, q_target, verbose=0)
+            _ = self.q_eval.fit(state, q_target, verbose=1)
 
             self.epsilon = self.epsilon*self.epsilon_dec if self.epsilon > self.epsilon_min else self.epsilon_min
 

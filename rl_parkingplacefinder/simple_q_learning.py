@@ -87,8 +87,8 @@ class Park_Finder_Agent():
                     self.vacant_list.append(i)
             else:
                 self.drive_list.append(i)
-        self.stateSpacePlus = self.vacant_list + self.taken_list
-        self.stateSpace = self.drive_list
+        self.stateSpacePlus = self.drive_list
+        self.stateSpace = self.vacant_list + self.taken_list
         self.agentPosition = 0
         self.grid = self.parkingLotToArray()
         
@@ -175,12 +175,10 @@ class Park_Finder_Agent():
         if not self.offGridMove(resultingState, self.agentPosition):
             self.setState(resultingState)
             # self.agentPosition = resultingState
-            return self.get_observation(resultingState), reward, self.isTerminalState(resultingState), None
+            return resultingState, reward, self.isTerminalState(resultingState), None
         else:
-            return self.get_observation(self.agentPosition), reward, self.isTerminalState(self.agentPosition), None
+            return self.agentPosition, reward, self.isTerminalState(self.agentPosition), None
 
-    def get_observation(self, position):
-        return np.array([i for i in self.stateSpace + self.stateSpacePlus if i >= position][:12])
 
     def offGridMove(self, newState, oldState):
         # if we move into a row not in the grid
@@ -232,7 +230,7 @@ class Park_Finder_Agent():
         """
         self.agentPosition = 0
         self.grid = self.parkingLotToArray()
-        return self.get_observation(self.agentPosition)
+        return self.agentPosition
     
     def actionSpaceSample(self):
         return np.random.choice(self.possibleActions)
