@@ -133,13 +133,14 @@ if __name__ == '__main__':
     totalRewards = np.zeros(numEpisodes)
     learningRewards = np.zeros(numEpisodes)
     epsilon = np.zeros(numEpisodes)
-    last_rewards = collections.deque(maxlen=1000)
+    UPPER_LIMIT = EPISODES/100
+    last_rewards = collections.deque(maxlen=int(UPPER_LIMIT))
 
     pbar = tqdm(range(numEpisodes))
     for i in pbar:
         observation = env.agentPosition
         # Every xth episode we reset the car to position 0 and start again
-        if i % (EPISODES/100) == 0:
+        if i % (UPPER_LIMIT) == 0:
             observation = env.reset()
         done = False
 
@@ -208,7 +209,7 @@ if __name__ == '__main__':
             learningRewards[i] = epRewards
             last_rewards.append(epRewards)
 
-        if len(last_rewards) == 1000 and len(list(set(last_rewards))) == 1:
+        if len(last_rewards) == UPPER_LIMIT and len(list(set(last_rewards))) == 1 and reward_parameters.PARKING_REWARD-drive_distance == last_rewards[-1]:
             print("Early stopping because of no changes")
             epsilon = epsilon[epsilon != 0]
             learningRewards = learningRewards[learningRewards != 0]
