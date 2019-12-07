@@ -116,7 +116,7 @@ class Park_Finder_Agent():
             return self.reward_parameters.PARK_CRASH_REWARD
         # reward for a parking lot. If the distance to the exit is close, the reward is nearly 25. If the distance is far, reward gets smaller
         if resultingState in self.vacant_list and resultingState != max(self.vacant_list):
-            return -(nx.shortest_path_length(parking_lot,source=self.agentPosition,target=max(self.vacant_list)))**2/max(self.vacant_list)
+            return -(nx.shortest_path_length(self.parking_lot,source=self.agentPosition,target=max(self.vacant_list)))**2/max(self.vacant_list)
         if resultingState == max(self.vacant_list):
             return self.reward_parameters.PARKING_REWARD
         # else:
