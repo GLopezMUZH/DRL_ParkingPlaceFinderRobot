@@ -92,47 +92,27 @@ def make_combo_plot(a,b):
     plt.show()
 
 
+#%%
+# model hyperparameters
+class Learning_Model_Parameters():
+    def __init__(self):
+        self.ALPHA = 0.1
+        self.GAMMA = 1.0
+        self.EPISODES = 100 #55000
+        self.show = False #True
+
 
 #%%
-if __name__ == '__main__':
-
-    ffp = Parking_lot.Filling_Function_Parameters(uniform_distribution_p_value = 0.5)
-    ldp = Parking_lot.Lane_Direction_Parameters()
-    EPISODES = 100 #55000
-    show = False #True
-
-    parking_environment = Parking_Lot(lane_direction_paramenters=ldp,
-                            filling_function_parameters=ffp,
-                            nr_parking_slots_per_lane=5,
-                            nr_parking_lanes=4,
-                            parking_lane_depth=2,
-                            debug=True,
-                            draw_graph = True,
-                            show_summary = False
-                            )
-
-    parking_lot = parking_environment.get_env()
-
-    reward_parameters = Reward_Parameters()
-
-    agent = Park_Finder_Agent(reward_parameters=reward_parameters, parking_environment=parking_environment)
-    # model hyperparameters
-    ALPHA = 0.1
-    GAMMA = 1.0
-    EPS = 1.0
+def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Learning_Model_Parameters):
     frames = [] # for information
     fig = plt.figure()
 
-    Q = {}
-    for state in agent.stateSpacePlus:
-        for action in agent.possibleActions:
-            Q[state, action] = 0
-
-    numEpisodes = EPISODES
+    eps = 1.0
+    numEpisodes = lmp.EPISODES
     totalRewards = np.zeros(numEpisodes)
     learningRewards = np.zeros(numEpisodes)
     epsilon = np.zeros(numEpisodes)
-    UPPER_LIMIT = EPISODES/100
+    UPPER_LIMIT = lmp.EPISODES/100
     last_rewards = collections.deque(maxlen=int(UPPER_LIMIT))
 
     pbar = tqdm(range(numEpisodes))
@@ -152,7 +132,7 @@ if __name__ == '__main__':
         while not done:
             finish = False
             rand = np.random.random()
-            action = maxAction(Q, observation, agent.possibleActions) if rand < (1-EPS) else agent.actionSpaceSample()
+            action = maxAction(Q, observation, agent.possibleActions) if rand < (1-eps) else agent.actionSpaceSample()
             # this ovservatio is a trial step
             observation_, reward, done, info = agent.step(action)
 
@@ -172,7 +152,7 @@ if __name__ == '__main__':
             epRewards += reward
 
             action_ = maxAction(Q, observation_, agent.possibleActions)
-            Q[observation,action] = Q[observation,action] + ALPHA*(reward + GAMMA*Q[observation_,action_] - Q[observation,action])
+            Q[observation,action] = Q[observation,action] + lmp.ALPHA*(reward + lmp.GAMMA*Q[observation_,action_] - Q[observation,action])
             history.append(observation)
             action_history.append(action)
             reward_history.append(epRewards)
@@ -199,12 +179,12 @@ if __name__ == '__main__':
                 img = img.resize((500, 500))  # resizing so we can see our agent in all its glory.
                 cv2.imshow("Parking Agent", np.array(img))
 
-        if EPS - 2 / numEpisodes > 0:
-            EPS -= 2 / numEpisodes
+        if eps - 2 / numEpisodes > 0:
+            eps -= 2 / numEpisodes
         else:
-            EPS = 0
-        pbar.set_description("Reward: {}, Parking at: {} Epsilon: {}".format(round(epRewards, 2),resulting_state,round(EPS,2)))
-        epsilon[i] = EPS
+            eps = 0
+        pbar.set_description("Reward: {}, Parking at: {} Epsilon: {}".format(round(epRewards, 2),resulting_state,round(eps,2)))
+        epsilon[i] = eps
         if epRewards:
             learningRewards[i] = epRewards
             last_rewards.append(epRewards)
@@ -231,13 +211,47 @@ if __name__ == '__main__':
 
     # save results
     # as numpy
-    file_name_np = 'qtables/simpleq_'+ ffp.getName() +'_' + str(EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S"))
+    file_name_np = 'qtables/simpleq_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S"))
     np.save(file_name_np,Q)
 
     # as csv
-    file_name_csv = 'qtables/simpleq_'+ ffp.getName() +'_' + str(EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
+    file_name_csv = 'qtables/simpleq_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
     with open(file_name_csv,'w', newline='') as f:  
         writer = csv.writer(f)
         for key, value in Q.items():
             writer.writerow([key[0], key[1], value])
     
+
+
+#%%
+if __name__ == '__main__':
+
+    ffp = Parking_lot.Filling_Function_Parameters(uniform_distribution_p_value = 0.5)
+    ldp = Parking_lot.Lane_Direction_Parameters()
+
+    parking_environment = Parking_Lot(lane_direction_paramenters=ldp,
+                            filling_function_parameters=ffp,
+                            nr_parking_slots_per_lane=5,
+                            nr_parking_lanes=4,
+                            parking_lane_depth=2,
+                            debug=True,
+                            draw_graph = True,
+                            show_summary = False
+                            )
+
+    parking_lot = parking_environment.get_env()
+
+    reward_parameters = Reward_Parameters()
+
+    lmp = Learning_Model_Parameters()
+
+    agent = Park_Finder_Agent(reward_parameters=reward_parameters, parking_environment=parking_environment)
+
+    Q = {}
+    for state in agent.stateSpacePlus:
+        for action in agent.possibleActions:
+            Q[state, action] = 0
+    
+    doLearning(agent=agent, parking_lot=parking_lot, Q=Q, lmp=lmp)
+
+# %%
