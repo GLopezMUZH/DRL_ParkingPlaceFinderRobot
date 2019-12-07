@@ -21,8 +21,9 @@ import networkx as nx
 from PIL import Image
 import cv2
 import scipy.misc
-import os
+import csv
 
+import os
 os.getcwd()
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -31,8 +32,8 @@ from Parking_lot import Parking_Lot
 from Park_Finder_Agent import Park_Finder_Agent
 from Park_Finder_Agent import Reward_Parameters
 
-
-
+import time
+from datetime import datetime
 
 #%%
 """
@@ -79,7 +80,7 @@ if __name__ == '__main__':
 
     ffp = Parking_lot.Filling_Function_Parameters(uniform_distribution_p_value = 0.5)
     ldp = Parking_lot.Lane_Direction_Parameters()
-    EPISODES = 500 #55000
+    EPISODES = 100 #55000
     show = False #True
 
     parking_environment = Parking_Lot(lane_direction_paramenters=ldp,
@@ -95,9 +96,7 @@ if __name__ == '__main__':
     parking_lot = parking_environment.get_env()
 
     reward_parameters = Reward_Parameters()
-
-    print("hi")
-
+ 
     env = Park_Finder_Agent(reward_parameters=reward_parameters, parking_environment=parking_environment)
     # model hyperparameters
     ALPHA = 0.1
@@ -124,6 +123,7 @@ if __name__ == '__main__':
 
         epRewards = 0
         history = [0]
+        reward = 0
 
         while not done:
             finish = False
@@ -132,8 +132,6 @@ if __name__ == '__main__':
             action = maxAction(Q, observation, env.possibleActions) if rand < (1-EPS) else env.actionSpaceSample()
             # this ovservatio is a trial step
             observation_, reward, done, info = env.step(action)
-
-
 
             # making sure that when parking lot was reached or a crash with a parked car occures, we terminate this episode (just experimental, should be handled in the getReward function)
             resulting_state = observation+env.actionSpace[action]
@@ -204,6 +202,13 @@ if __name__ == '__main__':
     # plt.plot(totalRewards)
     plt.plot(learningRewards)
     plt.show()
+    # print Q table
+    first2pairs = {k: Q[k] for k in sorted(Q.keys())[:10]}
+    print("1 = UP, 2 = Down, 3 = Left, 4 = Right, 5 = Park")
+    print(first2pairs)
 
+    # save results
+    file_name = 'qtables/simpleq_'+ ffp.getName() +'_' + EPISODES +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
+    np.save(file_name,Q)    
 
 # %%
