@@ -24,7 +24,7 @@ import scipy.misc
 import os
 
 os.getcwd()
-os.chdir('c:\\Users\\glopez\\uzh_stuff\\DeepReinforcementLearning\\DRL_ParkingPlaceFinderRobot\\rl_parkingplacefinder')
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 import Parking_lot
 from Parking_lot import Parking_Lot
