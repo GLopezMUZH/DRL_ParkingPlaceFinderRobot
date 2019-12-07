@@ -104,13 +104,16 @@ class Learning_Model_Parameters():
 
 
 #%%
-def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Learning_Model_Parameters, debug = False, show = False, showFrames = False):
+def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot, Q: dict, lmp: Learning_Model_Parameters, debug = False, show = False, showFrames = False):
 
     def __printDebug(*val):
             if debug:
                 print(list(val))
 
     print('Start learning: '+str(datetime.today().strftime("%d-%m-%y %H %M %S")))
+
+    parking_lot = parking_environment.get_env()
+    ffp = parking_environment.filling_function_parameters
 
     frames = [] # for information
     fig = plt.figure()
@@ -200,7 +203,7 @@ def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Le
             learningRewards[i] = epRewards
             last_rewards.append(epRewards)
 
-        if len(last_rewards) == UPPER_LIMIT and len(list(set(last_rewards))) == 1 and reward_parameters.PARKING_REWARD-drive_distance == last_rewards[-1]:
+        if len(last_rewards) == UPPER_LIMIT and len(list(set(last_rewards))) == 1 and agent.reward_parameters.PARKING_REWARD-drive_distance == last_rewards[-1]:
             print("Early stopping because of no changes")
             epsilon = epsilon[epsilon != 0]
             learningRewards = learningRewards[learningRewards != 0]
@@ -271,6 +274,6 @@ if __name__ == '__main__':
         for action in agent.possibleActions:
             Q[state, action] = 0
     
-    doLearning(agent=agent, parking_lot=parking_lot, Q=Q, lmp=lmp)
+    doLearning(agent=agent, parking_environment=parking_environment, Q=Q, lmp=lmp)
 
 # %%

@@ -207,6 +207,7 @@ class Parking_Lot():
             if (save_file):
                 plt.tight_layout()
                 plt.savefig(file_name_parking_lot_plot, format="PNG")
+                plt.close()
         else:
             print("Graph is too large to be drawn")
 

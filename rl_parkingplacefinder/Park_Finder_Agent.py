@@ -124,11 +124,13 @@ class Park_Finder_Agent():
 
         if actualState in self.vacant_list:
             if actualState == resultingState:
+                # PARKING_REWARD depends on the closeness of the choosen slot to the best possible empty spot distance
                 if resultingState != max(self.vacant_list) and action == 5:
                     disc_reward = self.reward_parameters.PARKING_REWARD / ((nx.shortest_path_length(self.parking_lot,
                                                                                              source=self.agentPosition,
                                                                                              target=max(self.drive_list))) * 2)
                     return disc_reward
+                # if parked in the best possible empty spot get the whole PARKING_REWARD
                 if resultingState == max(self.vacant_list) and action == 5:
                     return self.reward_parameters.PARKING_REWARD
                 # when driving over an empty parking slot to reach a better empty parking slot
