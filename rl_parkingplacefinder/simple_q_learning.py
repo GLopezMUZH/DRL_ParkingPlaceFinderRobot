@@ -115,7 +115,7 @@ if __name__ == '__main__':
 
     reward_parameters = Reward_Parameters()
 
-    env = Park_Finder_Agent(reward_parameters=reward_parameters, parking_environment=parking_environment)
+    agent = Park_Finder_Agent(reward_parameters=reward_parameters, parking_environment=parking_environment)
     # model hyperparameters
     ALPHA = 0.1
     GAMMA = 1.0
@@ -124,8 +124,8 @@ if __name__ == '__main__':
     fig = plt.figure()
 
     Q = {}
-    for state in env.stateSpacePlus:
-        for action in env.possibleActions:
+    for state in agent.stateSpacePlus:
+        for action in agent.possibleActions:
             Q[state, action] = 0
 
     numEpisodes = EPISODES
@@ -137,10 +137,10 @@ if __name__ == '__main__':
 
     pbar = tqdm(range(numEpisodes))
     for i in pbar:
-        observation = env.agentPosition
+        observation = agent.agentPosition
         # Every xth episode we reset the car to position 0 and start again
         if i % (UPPER_LIMIT) == 0:
-            observation = env.reset()
+            observation = agent.reset()
         done = False
 
         epRewards = 0
@@ -152,14 +152,13 @@ if __name__ == '__main__':
         while not done:
             finish = False
             rand = np.random.random()
-            action = maxAction(Q, observation, env.possibleActions) if rand < (1-EPS) else env.actionSpaceSample()
+            action = maxAction(Q, observation, agent.possibleActions) if rand < (1-EPS) else agent.actionSpaceSample()
             # this ovservatio is a trial step
-            observation_, reward, done, info = env.step(action)
+            observation_, reward, done, info = agent.step(action)
 
             # making sure that when parking lot was reached or a crash with a parked car occures, we terminate this episode (just experimental, should be handled in the getReward function)
-            resulting_state = observation+env.actionSpace[action]
+            resulting_state = observation+agent.actionSpace[action]
 
-            #if reward == -(nx.shortest_path_length(parking_lot,source=env.agentPosition,target=max(env.vacant_list)))**2/max(env.vacant_list) or reward == reward_parameters.PARK_CRASH_REWARD or reward == reward_parameters.WALL_CRASH_REWARD:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
             if done:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
                 if cv2.waitKey(50) & 0xFF == ord('q'):
                     break
@@ -167,25 +166,25 @@ if __name__ == '__main__':
                 if cv2.waitKey(1) & 0x7F == ord('q'):
                     break
 
-            if observation_+env.actionSpace[action] in env.vacant_list and action == 5:
+            if observation_+agent.actionSpace[action] in agent.vacant_list and action == 5:
                 finish = True
 
             epRewards += reward
 
-            action_ = maxAction(Q, observation_, env.possibleActions)
+            action_ = maxAction(Q, observation_, agent.possibleActions)
             Q[observation,action] = Q[observation,action] + ALPHA*(reward + GAMMA*Q[observation_,action_] - Q[observation,action])
             history.append(observation)
             action_history.append(action)
             reward_history.append(epRewards)
             observation = observation_
 
-            if resulting_state in env.vacant_list and action == 5:
-                walk_distance = nx.shortest_path_length(parking_lot,source=resulting_state,target=max(env.parking_lot.nodes))
+            if resulting_state in agent.vacant_list and action == 5:
+                walk_distance = nx.shortest_path_length(parking_lot,source=resulting_state,target=max(agent.parking_lot.nodes))
                 drive_distance = nx.shortest_path_length(parking_lot,source=0,target=resulting_state)
             if finish:
                 print("start a new episode")
                 done = True
-                env.reset()
+                agent.reset()
                 history.append(resulting_state)
                 frames.append({'state': observation, 'resulting state': resulting_state, 'state history': history[:-1],
                                'action history': action_history, 'reward history': reward_history,
@@ -196,7 +195,7 @@ if __name__ == '__main__':
                 drive_distance = False
 
             if show:
-                img = scipy.misc.toimage(env.grid)
+                img = scipy.misc.toimage(agent.grid)
                 img = img.resize((500, 500))  # resizing so we can see our agent in all its glory.
                 cv2.imshow("Parking Agent", np.array(img))
 
@@ -231,9 +230,14 @@ if __name__ == '__main__':
     print(first2pairs)
 
     # save results
-    file_name = 'qtables/simpleq_'+ ffp.getName() +'_' + str(EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
-    np.save(file_name,Q)
+    # as numpy
+    file_name_np = 'qtables/simpleq_'+ ffp.getName() +'_' + str(EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S"))
+    np.save(file_name_np,Q)
 
-
-
-# %%
+    # as csv
+    file_name_csv = 'qtables/simpleq_'+ ffp.getName() +'_' + str(EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
+    with open(file_name_csv,'w', newline='') as f:  
+        writer = csv.writer(f)
+        for key, value in Q.items():
+            writer.writerow([key[0], key[1], value])
+    
