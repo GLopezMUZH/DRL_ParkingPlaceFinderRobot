@@ -185,11 +185,12 @@ if __name__ == '__main__':
                 # cv2.putText(img,frame,(10,600), font, 2,(0,0,255),2,cv2.LINE_AA)
                 cv2.imshow("Parking Agent", np.array(img))
 
-            frames.append({'state': observation,'resulting state': resulting_state,'state history':history, 'action': action,'reward': reward, 'new start': done,'walk distance': walk_distance, 'drive distance':drive_distance})
+            frames.append({'state': observation,'resulting state': resulting_state,'state history':history, 'action': action,'reward': epRewards, 'new start': done,'walk distance': walk_distance, 'drive distance':drive_distance})
         if EPS - 2 / numEpisodes > 0:
             EPS -= 2 / numEpisodes
         else:
             EPS = 0
+        print(EPS)
         if epRewards > -10:
             learningRewards[i] = epRewards
 
