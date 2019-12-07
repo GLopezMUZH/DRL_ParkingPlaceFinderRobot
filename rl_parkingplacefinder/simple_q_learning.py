@@ -75,7 +75,7 @@ def maxAction(Q, state, actions):
         action = np.argmax(values)
     return actions[action]
 
-def make_combo_plot(a,b, file_name_combo_plot):
+def make_combo_plot(a,b, save_file = False, file_name_combo_plot = 'None'):
     fig, ax1 = plt.subplots()
     color = 'tab:green'
     ax1.set_xlabel('episodes (s)')
@@ -89,7 +89,8 @@ def make_combo_plot(a,b, file_name_combo_plot):
     ax2.tick_params(axis='y', labelcolor=color)
 
     fig.tight_layout()
-    plt.savefig(file_name_combo_plot)
+    if (save_file):
+        plt.savefig(file_name_combo_plot)
     plt.show()
 
 
@@ -99,7 +100,7 @@ class Learning_Model_Parameters():
     def __init__(self):
         self.ALPHA = 0.1
         self.GAMMA = 1.0
-        self.EPISODES = 500 #55000
+        self.EPISODES = 55000
 
 
 #%%
@@ -190,7 +191,10 @@ def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Le
             eps -= 2 / numEpisodes
         else:
             eps = 0
-        pbar.set_description("Reward: {}, Parking at: {} Epsilon: {}".format(round(epRewards, 2),resulting_state,round(eps,2)))
+        
+        if (debug):
+            pbar.set_description("Reward: {}, Parking at: {} Epsilon: {}".format(round(epRewards, 2),resulting_state,round(eps,2)))
+        
         epsilon[i] = eps
         if epRewards:
             learningRewards[i] = epRewards
@@ -209,8 +213,8 @@ def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Le
     if (showFrames):
         print(print_frames(frames))
     
-    # save frames as csv
-    file_name_frames_csv = 'qtables/simpleq_frames_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
+    # save frames as csv but extension txt because delimier is ; and cells include ,'s
+    file_name_frames_csv = 'qtables/simpleq_frames_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.txt'
     with open(file_name_frames_csv,'w', newline='') as f:  
         writer = csv.writer(f, delimiter =";")
         writer.writerow(['Timestep','State','Action','Resulting state', 'Reward', 'Found parking','Path','Action history','Reward history','Walking distance','Driving distance'])
@@ -219,7 +223,7 @@ def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Le
 
     # plt.plot(totalRewards)
     file_name_combo_plot = 'qtables/plot_rewards_eps_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%y-%m-%d %H %M %S")) +'.png'
-    make_combo_plot(learningRewards,epsilon, file_name_combo_plot)
+    make_combo_plot(learningRewards,epsilon, save_file=True, file_name_combo_plot=file_name_combo_plot)
 
     # plt.plot(learningRewards)
     # plt.show()
@@ -249,15 +253,16 @@ if __name__ == '__main__':
                             nr_parking_lanes=4,
                             parking_lane_depth=2,
                             debug=True,
-                            draw_graph = True,
+                            draw_graph = False,
                             show_summary = False
                             )
 
     parking_lot = parking_environment.get_env()
-
     reward_parameters = Reward_Parameters()
-
     lmp = Learning_Model_Parameters()
+
+    file_name_parking_lot_plot = 'qtables/parking_lot_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%y-%m-%d %H %M %S")) +'.png'
+    parking_environment.plot(save_file=True, file_name_parking_lot_plot=file_name_parking_lot_plot)
 
     agent = Park_Finder_Agent(reward_parameters=reward_parameters, parking_environment=parking_environment)
 

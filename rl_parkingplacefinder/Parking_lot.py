@@ -199,11 +199,14 @@ class Parking_Lot():
 
         nx.draw_spectral(G2, node_size=600, node_color='w')
 
-    def plot(self):
+    def plot(self, save_file = False, file_name_parking_lot_plot = 'None'):
         if(self.g.number_of_nodes() < 1000):
             self.g.nodes.data()
             pos = nx.spring_layout(self.g,iterations=1000)
             nx.draw(self.g, pos=pos,  node_color = self.node_color_map, with_labels=True)
+            if (save_file):
+                plt.tight_layout()
+                plt.savefig(file_name_parking_lot_plot, format="PNG")
         else:
             print("Graph is too large to be drawn")
 
@@ -243,3 +246,6 @@ class Parking_Lot():
 
     def get_env(self):
         return self.g
+
+
+# %%
