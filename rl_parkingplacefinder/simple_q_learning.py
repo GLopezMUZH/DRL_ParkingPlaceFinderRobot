@@ -151,7 +151,6 @@ if __name__ == '__main__':
 
         while not done:
             finish = False
-
             rand = np.random.random()
             action = maxAction(Q, observation, env.possibleActions) if rand < (1-EPS) else env.actionSpaceSample()
             # this ovservatio is a trial step
@@ -161,22 +160,18 @@ if __name__ == '__main__':
             resulting_state = observation+env.actionSpace[action]
             # print(env.actionSpace[action])
 
-            if reward == -(nx.shortest_path_length(parking_lot,source=env.agentPosition,target=max(env.vacant_list)))**2/max(env.vacant_list) or reward == reward_parameters.PARK_CRASH_REWARD or reward == reward_parameters.WALL_CRASH_REWARD:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
+            #if reward == -(nx.shortest_path_length(parking_lot,source=env.agentPosition,target=max(env.vacant_list)))**2/max(env.vacant_list) or reward == reward_parameters.PARK_CRASH_REWARD or reward == reward_parameters.WALL_CRASH_REWARD:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
+            if done:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
                 if cv2.waitKey(50) & 0xFF == ord('q'):
                     break
             else:
                 if cv2.waitKey(1) & 0x7F == ord('q'):
                     break
-            # time.sleep(0.001)
 
             if observation_+env.actionSpace[action] in env.vacant_list and action == 5:
                 finish = True
-            #     reward = 25
-            # if observation_+env.actionSpace[action] in env.taken_list:
-            #     finish = True
-            #     # reward = -300
+
             epRewards += reward
-            # print(epRewards)
 
             action_ = maxAction(Q, observation_, env.possibleActions)
             Q[observation,action] = Q[observation,action] + ALPHA*(reward + GAMMA*Q[observation_,action_] - Q[observation,action])
@@ -206,18 +201,10 @@ if __name__ == '__main__':
                 drive_distance = False
 
             if show:
-                # grid = np.where(env.grid==1, 128, env.grid)
-                # grid = np.where(grid==2, 255, grid)
-                # grid = np.where(grid==3, 255, grid)
-                # img = Image.fromarray(grid,mode='L')
                 img = scipy.misc.toimage(env.grid)
                 img = img.resize((500, 500))  # resizing so we can see our agent in all its glory.
-                # font = cv2.FONT_HERSHEY_SIMPLEX
-                # img = cv2.copyMakeBorder(img, 10, 200, 10, 10, cv2.BORDER_CONSTANT)
-                # cv2.putText(img,frame,(10,600), font, 2,(0,0,255),2,cv2.LINE_AA)
                 cv2.imshow("Parking Agent", np.array(img))
 
-            frames.append({'state': observation,'resulting state': resulting_state,'state history':history, 'action': action,'reward': epRewards, 'new start': done,'walk distance': walk_distance, 'drive distance':drive_distance})
         if EPS - 2 / numEpisodes > 0:
             EPS -= 2 / numEpisodes
         else:
@@ -251,6 +238,9 @@ if __name__ == '__main__':
     print(first2pairs)
 
     # save results
-    file_name = 'qtables/simpleq_'+ ffp.getName() +'_' + EPISODES +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
+    file_name = 'qtables/simpleq_'+ ffp.getName() +'_' + str(EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
     np.save(file_name,Q)    
 
+
+
+# %%
