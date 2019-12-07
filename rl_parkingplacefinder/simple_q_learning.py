@@ -177,6 +177,7 @@ if __name__ == '__main__':
             history.append(observation)
             action_history.append(action)
             reward_history.append(epRewards)
+            last_rewards.append(epRewards)
             observation = observation_
 
             if resulting_state in env.vacant_list and action == 5:
