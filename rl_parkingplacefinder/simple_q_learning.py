@@ -75,7 +75,7 @@ def maxAction(Q, state, actions):
         action = np.argmax(values)
     return actions[action]
 
-def make_combo_plot(a,b):
+def make_combo_plot(a,b, file_name_combo_plot):
     fig, ax1 = plt.subplots()
     color = 'tab:green'
     ax1.set_xlabel('episodes (s)')
@@ -89,6 +89,7 @@ def make_combo_plot(a,b):
     ax2.tick_params(axis='y', labelcolor=color)
 
     fig.tight_layout()
+    plt.savefig(file_name_combo_plot)
     plt.show()
 
 
@@ -98,7 +99,7 @@ class Learning_Model_Parameters():
     def __init__(self):
         self.ALPHA = 0.1
         self.GAMMA = 1.0
-        self.EPISODES = 100 #55000
+        self.EPISODES = 500 #55000
 
 
 #%%
@@ -107,6 +108,8 @@ def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Le
     def __printDebug(*val):
             if debug:
                 print(list(val))
+
+    print('Start learning: '+str(datetime.today().strftime("%d-%m-%y %H %M %S")))
 
     frames = [] # for information
     fig = plt.figure()
@@ -201,6 +204,8 @@ def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Le
 
         # totalRewards[i] = epRewards
 
+    print('End learning: '+str(datetime.today().strftime("%d-%m-%y %H %M %S")))
+
     if (showFrames):
         print(print_frames(frames))
     
@@ -213,22 +218,18 @@ def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Le
             writer.writerow([(i + 1), frame['state'], frame['action'], frame['resulting state'], frame['reward'], frame['new start'], frame['state history'], frame['action history'], frame['reward history'], frame['walk distance'],frame['drive distance']])
 
     # plt.plot(totalRewards)
-    make_combo_plot(learningRewards,epsilon)
+    file_name_combo_plot = 'qtables/plot_rewards_eps_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%y-%m-%d %H %M %S")) +'.png'
+    make_combo_plot(learningRewards,epsilon, file_name_combo_plot)
 
     # plt.plot(learningRewards)
     # plt.show()
 
-    # print Q table
-    first2pairs = {k: Q[k] for k in sorted(Q.keys())[:10]}
-    print("1 = UP, 2 = Down, 3 = Left, 4 = Right, 5 = Park")
-    print(first2pairs)
-
     # save q-table as numpy
-    file_name_q_np = 'qtables/simpleq_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S"))
+    file_name_q_np = 'qtables/simpleq_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%y-%m-%d %H %M %S"))
     np.save(file_name_q_np,Q)
 
     # save q-table as csv
-    file_name_q_csv = 'qtables/simpleq_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
+    file_name_q_csv = 'qtables/simpleq_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%y-%m-%d %H %M %S")) +'.csv'
     with open(file_name_q_csv,'w', newline='') as f:  
         writer = csv.writer(f)
         for key, value in Q.items():
