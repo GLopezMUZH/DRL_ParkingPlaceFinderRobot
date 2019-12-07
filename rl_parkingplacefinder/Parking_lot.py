@@ -30,6 +30,11 @@ class Filling_Function_Parameters():
     def __init__(self, filling_function = 'uniform', uniform_distribution_p_value = 0.7):
         self.filling_function = filling_function
         self.uniform_distribution_p_value = uniform_distribution_p_value
+    
+    def getName(self):
+        if (self.filling_function == 'uniform'):
+            return 'U'+ "%.0f" % (self.uniform_distribution_p_value*100)
+
 
 
 class Lane_Direction_Parameters():
@@ -205,6 +210,9 @@ class Parking_Lot():
     def fill_parking_slots(self):
         if self.filling_function_parameters.filling_function == 'uniform':
             return self.fill_parking_uniform()
+        # TODO binomial distribution around the middle so it goes to the end of the parking
+        # TODO other distribution where closer to the walking entry is full
+        # TODO other distribution where closer to the car entry and to the walking entry is full
 
     def fill_parking_uniform(self):
         for i in range(self.nr_slots_total):
