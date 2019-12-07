@@ -99,11 +99,15 @@ class Learning_Model_Parameters():
         self.ALPHA = 0.1
         self.GAMMA = 1.0
         self.EPISODES = 100 #55000
-        self.show = False #True
 
 
 #%%
-def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Learning_Model_Parameters):
+def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Learning_Model_Parameters, debug = False, show = False, showFrames = False):
+
+    def __printDebug(*val):
+            if debug:
+                print(list(val))
+
     frames = [] # for information
     fig = plt.figure()
 
@@ -162,7 +166,7 @@ def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Le
                 walk_distance = nx.shortest_path_length(parking_lot,source=resulting_state,target=max(agent.parking_lot.nodes))
                 drive_distance = nx.shortest_path_length(parking_lot,source=0,target=resulting_state)
             if finish:
-                print("start a new episode")
+                __printDebug("start a new episode")
                 done = True
                 agent.reset()
                 history.append(resulting_state)
@@ -197,7 +201,17 @@ def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Le
 
         # totalRewards[i] = epRewards
 
-    print(print_frames(frames))
+    if (showFrames):
+        print(print_frames(frames))
+    
+    # save frames as csv
+    file_name_frames_csv = 'qtables/simpleq_frames_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
+    with open(file_name_frames_csv,'w', newline='') as f:  
+        writer = csv.writer(f, delimiter =";")
+        writer.writerow(['Timestep','State','Action','Resulting state', 'Reward', 'Found parking','Path','Action history','Reward history','Walking distance','Driving distance'])
+        for i, frame in enumerate(frames):
+            writer.writerow([(i + 1), frame['state'], frame['action'], frame['resulting state'], frame['reward'], frame['new start'], frame['state history'], frame['action history'], frame['reward history'], frame['walk distance'],frame['drive distance']])
+
     # plt.plot(totalRewards)
     make_combo_plot(learningRewards,epsilon)
 
@@ -209,14 +223,13 @@ def doLearning(agent: Park_Finder_Agent, parking_lot: nx.Graph, Q: dict, lmp: Le
     print("1 = UP, 2 = Down, 3 = Left, 4 = Right, 5 = Park")
     print(first2pairs)
 
-    # save results
-    # as numpy
-    file_name_np = 'qtables/simpleq_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S"))
-    np.save(file_name_np,Q)
+    # save q-table as numpy
+    file_name_q_np = 'qtables/simpleq_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S"))
+    np.save(file_name_q_np,Q)
 
-    # as csv
-    file_name_csv = 'qtables/simpleq_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
-    with open(file_name_csv,'w', newline='') as f:  
+    # save q-table as csv
+    file_name_q_csv = 'qtables/simpleq_'+ ffp.getName() +'_' + str(lmp.EPISODES) +'_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) +'.csv'
+    with open(file_name_q_csv,'w', newline='') as f:  
         writer = csv.writer(f)
         for key, value in Q.items():
             writer.writerow([key[0], key[1], value])
