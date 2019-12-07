@@ -133,7 +133,7 @@ if __name__ == '__main__':
     totalRewards = np.zeros(numEpisodes)
     learningRewards = np.zeros(numEpisodes)
     epsilon = np.zeros(numEpisodes)
-    reward_history = collections.deque(maxlen=200)
+    last_rewards = collections.deque(maxlen=200)
 
     pbar = tqdm(range(numEpisodes))
     for i in pbar:
@@ -213,7 +213,7 @@ if __name__ == '__main__':
             learningRewards[i] = epRewards
             reward_history.append(epRewards)
 
-        if len(reward_history) == 200 and len(list(set(reward_history))) == 1:
+        if len(last_rewards) == 200 and len(list(set(last_rewards))) == 1:
             print("Early stopping because of no changes")
             epsilon = epsilon[epsilon != 0]
             learningRewards = learningRewards[learningRewards != 0]
