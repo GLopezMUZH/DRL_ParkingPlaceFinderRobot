@@ -177,7 +177,6 @@ if __name__ == '__main__':
             history.append(observation)
             action_history.append(action)
             reward_history.append(epRewards)
-            last_rewards.append(epRewards)
             observation = observation_
 
             if resulting_state in env.vacant_list and action == 5:
@@ -212,7 +211,7 @@ if __name__ == '__main__':
         epsilon[i] = EPS
         if epRewards:
             learningRewards[i] = epRewards
-            reward_history.append(epRewards)
+            last_rewards.append(epRewards)
 
         if len(last_rewards) == 200 and len(list(set(last_rewards))) == 1:
             print("Early stopping because of no changes")
