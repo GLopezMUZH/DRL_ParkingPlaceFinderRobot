@@ -126,33 +126,40 @@ class Park_Finder_Agent():
         if actualState in self.vacant_list:
             if actualState == resultingState:
                 if resultingState != max(self.vacant_list) and action == 5:
-                    return self.reward_parameters.PARKING_REWARD / ((nx.shortest_path_length(self.parking_lot,
+                    disc_reward = self.reward_parameters.PARKING_REWARD / ((nx.shortest_path_length(self.parking_lot,
                                                                                              source=self.agentPosition,
-                                                                                             target=max(
-                                                                                                 self.vacant_list))) * 2)
+                                                                                             target=max(self.vacant_list))) * 2)
+                    return disc_reward
                 if resultingState == max(self.vacant_list) and action == 5:
                     return self.reward_parameters.PARKING_REWARD
                 # when driving over an empty parking slot to reach a better empty parking slot
             if resultingState != actualState and resultingState in self.vacant_list:
-                return self.reward_parameters.PARKING_REWARD / ((nx.shortest_path_length(self.parking_lot,
-                                                                                         source=self.agentPosition,
-                                                                                         target=max(
-                                                                                             self.vacant_list))) * 2)
+                disc_reward = self.reward_parameters.PARKING_REWARD / ((nx.shortest_path_length(self.parking_lot,
+                                                                                                source=self.agentPosition,
+                                                                                                target=max(self.vacant_list))) * 2)
+                return disc_reward
             else:
                 return self.reward_parameters.TIME_REWARD
 
+        if actualState in self.drive_list and resultingState in self.vacant_list:
+            return self.reward_parameters.TIME_REWARD
 
-        if resultingState not in self.stateSpacePlus:
-            # reward of -400 for hitting the wall on the side of the parking lot
+
+
+        if self.offGridMove(resultingState,actualState):
             return self.reward_parameters.WALL_CRASH_REWARD
+
+        else:
+            return 0
+
         
         
     def step(self, action):
         # agentX, agentY = self.getAgentRowAndColumn()
         resultingState = self.agentPosition + self.actionSpace[action]
-
         reward = self.getReward(self.agentPosition,resultingState, action)
-
+        if reward == 0:
+            print("something went wrong with the reward.. {} -> {}, action: {}".format(self.agentPosition,resultingState,action))
         if not self.offGridMove(resultingState, self.agentPosition):
             self.setState(resultingState)
             # self.agentPosition = resultingState
