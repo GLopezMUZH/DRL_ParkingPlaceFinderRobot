@@ -132,7 +132,7 @@ if __name__ == '__main__':
     totalRewards = np.zeros(numEpisodes)
     learningRewards = np.zeros(numEpisodes)
     epsilon = np.zeros(numEpisodes)
-    last_rewards = collections.deque(maxlen=200)
+    last_rewards = collections.deque(maxlen=1000)
 
     pbar = tqdm(range(numEpisodes))
     for i in pbar:
@@ -158,7 +158,6 @@ if __name__ == '__main__':
 
             # making sure that when parking lot was reached or a crash with a parked car occures, we terminate this episode (just experimental, should be handled in the getReward function)
             resulting_state = observation+env.actionSpace[action]
-            # print(env.actionSpace[action])
 
             #if reward == -(nx.shortest_path_length(parking_lot,source=env.agentPosition,target=max(env.vacant_list)))**2/max(env.vacant_list) or reward == reward_parameters.PARK_CRASH_REWARD or reward == reward_parameters.WALL_CRASH_REWARD:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
             if done:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
@@ -178,13 +177,9 @@ if __name__ == '__main__':
             history.append(observation)
             action_history.append(action)
             reward_history.append(epRewards)
-            last_rewards.append(epRewards)
             observation = observation_
 
             if resulting_state in env.vacant_list and action == 5:
-                # print('Found parking lot in episode: {}, parked on {} which is {} and got a reward of {}'.format(i, resulting_state,parking_lot.nodes[resulting_state]['occupation'],epRewards))
-                pbar.set_description("Reward %s " % round(epRewards, 2))
-
                 walk_distance = nx.shortest_path_length(parking_lot,source=resulting_state,target=max(env.parking_lot.nodes))
                 drive_distance = nx.shortest_path_length(parking_lot,source=0,target=resulting_state)
             if finish:
@@ -209,19 +204,17 @@ if __name__ == '__main__':
             EPS -= 2 / numEpisodes
         else:
             EPS = 0
-        # print("Epsilon: ", round(EPS, 3))
-        # pbar.set_description("Epsilon %s" % round(EPS,2))
+        pbar.set_description("Reward: {}, Parking at: {} Epsilon: {}".format(round(epRewards, 2),resulting_state,round(EPS,2)))
         epsilon[i] = EPS
         if epRewards:
             learningRewards[i] = epRewards
-            reward_history.append(epRewards)
+            last_rewards.append(epRewards)
 
-        if len(last_rewards) == 200 and len(list(set(last_rewards))) == 1:
+        if len(last_rewards) == 1000 and len(list(set(last_rewards))) == 1:
             print("Early stopping because of no changes")
             epsilon = epsilon[epsilon != 0]
             learningRewards = learningRewards[learningRewards != 0]
             break
-
 
         # totalRewards[i] = epRewards
 
