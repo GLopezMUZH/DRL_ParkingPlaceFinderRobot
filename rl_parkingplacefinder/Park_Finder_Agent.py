@@ -132,7 +132,7 @@ class Park_Finder_Agent():
                 if resultingState == max(self.vacant_list) and action == 5:
                     return self.reward_parameters.PARKING_REWARD
                 # when driving over an empty parking slot to reach a better empty parking slot
-            if resultingState != actualState and resultingState in self.vacant_list:
+            if resultingState != actualState and resultingState in self.vacant_list and action == 5:
                 disc_reward = self.reward_parameters.PARKING_REWARD / ((nx.shortest_path_length(self.parking_lot,
                                                                                                 source=self.agentPosition,
                                                                                                 target=max(self.drive_list))) * 2)
