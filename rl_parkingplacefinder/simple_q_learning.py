@@ -50,7 +50,7 @@ def print_frames(frames):
         print(f"Timestep: {i + 1}")
         print(f"State: {frame['state']}")
         print(f"Resulting state: {frame['resulting state']}")
-        print(f"previous state(s): {frame['state history']}")
+        print(f"Path: {frame['state history']}")
         print(f"Action: {frame['action']}")
         print(f"Reward: {frame['reward']}")
         print(f"Found parking: {frame['new start']}")
@@ -114,6 +114,7 @@ if __name__ == '__main__':
     numEpisodes = EPISODES
     totalRewards = np.zeros(numEpisodes)
     learningRewards = np.zeros(numEpisodes)
+    reward_history = collections.deque(maxlen=200)
     for i in range(numEpisodes):
         observation = env.agentPosition
         # Every xth episode we reset the car to position 0 and start again
@@ -123,6 +124,7 @@ if __name__ == '__main__':
 
         epRewards = 0
         history = []
+
 
         while not done:
             finish = False
@@ -179,6 +181,11 @@ if __name__ == '__main__':
         print("Epsilon: ", round(EPS,3))
         if epRewards:
             learningRewards[i] = epRewards
+            reward_history.append(epRewards)
+        if len(reward_history) == 200 and len(list(set(reward_history))) == 1:
+            print("Early stopping because of no changes")
+            break
+
 
         totalRewards[i] = epRewards
 
