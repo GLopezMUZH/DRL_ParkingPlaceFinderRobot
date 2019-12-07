@@ -122,13 +122,12 @@ class Park_Finder_Agent():
             else:
                 return 5 * self.reward_parameters.PARK_CRASH_REWARD
 
-
         if actualState in self.vacant_list:
             if actualState == resultingState:
                 if resultingState != max(self.vacant_list) and action == 5:
                     disc_reward = self.reward_parameters.PARKING_REWARD / ((nx.shortest_path_length(self.parking_lot,
                                                                                              source=self.agentPosition,
-                                                                                             target=max(self.vacant_list))) * 2)
+                                                                                             target=max(self.drive_list))) * 2)
                     return disc_reward
                 if resultingState == max(self.vacant_list) and action == 5:
                     return self.reward_parameters.PARKING_REWARD
@@ -136,15 +135,13 @@ class Park_Finder_Agent():
             if resultingState != actualState and resultingState in self.vacant_list:
                 disc_reward = self.reward_parameters.PARKING_REWARD / ((nx.shortest_path_length(self.parking_lot,
                                                                                                 source=self.agentPosition,
-                                                                                                target=max(self.vacant_list))) * 2)
+                                                                                                target=max(self.drive_list))) * 2)
                 return disc_reward
             else:
                 return self.reward_parameters.TIME_REWARD
 
         if actualState in self.drive_list and resultingState in self.vacant_list:
             return self.reward_parameters.TIME_REWARD
-
-
 
         if self.offGridMove(resultingState,actualState):
             return self.reward_parameters.WALL_CRASH_REWARD
@@ -160,6 +157,8 @@ class Park_Finder_Agent():
         reward = self.getReward(self.agentPosition,resultingState, action)
         if reward == 0:
             print("something went wrong with the reward.. {} -> {}, action: {}".format(self.agentPosition,resultingState,action))
+        else:
+            reward = round(reward, 3)
         if not self.offGridMove(resultingState, self.agentPosition):
             self.setState(resultingState)
             # self.agentPosition = resultingState
@@ -179,21 +178,7 @@ class Park_Finder_Agent():
             return True
         else:
             return False
-        
-    def render(self):
-        print('Entrance-----------------------------------------')
-        for row in self.grid:
-            for col in row:
-                if col == 1:
-                    print('.', end='\t')
-                elif col == 2:
-                    print('O', end='\t')
-                elif col == 0:
-                    print('X', end='\t')
-                elif col == 3:
-                    print('█', end='\t')
-            print('\n')
-        print('---------------------------------------------Exit')
+
         
     def renderToFile(self):
         H = self.grid
@@ -202,20 +187,6 @@ class Park_Finder_Agent():
 
 
     def reset(self):
-        # Code below would reset the parking lot after every crash or successful parking attempt
-        """"
-        parking_lot = Parking_Lot(lane_direction_paramenters=ldp,
-                                  filling_function_parameters=ffp,
-                                  nr_parking_slots_per_lane=5,
-                                  nr_parking_lanes=4,
-                                  parking_lane_depth=2,
-                                  debug=True,
-                                  draw_graph=True,
-                                  show_summary=False
-                                  )
-
-        self.parking_lot = parking_lot.get_env()
-        """
         self.agentPosition = 0
         self.grid = self.parkingLotToArray()
         return self.agentPosition

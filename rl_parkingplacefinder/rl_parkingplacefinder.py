@@ -73,9 +73,9 @@ class Park_Finder_Agent():
         self.parking_lot = parking_environment.get_env()
         self.m = self.get_parking_lot_width()
         self.n = self.get_parking_lot_length()
-        # 1 = UP, 2 = Down, 3 = Left, 4 = Right
-        self.actionSpace = {1: -self.m, 2: self.m, 3: -1, 4: 1}
-        self.possibleActions = [1, 2, 3, 4]
+        # 1 = UP, 2 = Down, 3 = Left, 4 = Right, 5 = Park
+        self.actionSpace = {1: -self.m, 2: self.m, 3: -1, 4: 1, 5: 0}
+        self.possibleActions = [1, 2, 3, 4, 5]
         self.taken_list = []
         self.vacant_list = []
         self.drive_list = []
@@ -87,8 +87,8 @@ class Park_Finder_Agent():
                     self.vacant_list.append(i)
             else:
                 self.drive_list.append(i)
-        self.stateSpacePlus = self.drive_list +  self.vacant_list + self.taken_list
-        self.stateSpace = self.drive_list
+        self.stateSpacePlus = self.drive_list + self.vacant_list + self.taken_list
+        self.stateSpace = self.drive_list + self.taken_list
         self.agentPosition = 0
         self.grid = self.parkingLotToArray()
         

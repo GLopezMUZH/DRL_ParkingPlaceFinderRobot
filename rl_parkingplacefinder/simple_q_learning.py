@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     ffp = Parking_lot.Filling_Function_Parameters(uniform_distribution_p_value = 0.5)
     ldp = Parking_lot.Lane_Direction_Parameters()
-    EPISODES = 500 #55000
+    EPISODES = 60000 #55000
     show = False #True
 
     parking_environment = Parking_Lot(lane_direction_paramenters=ldp,
@@ -187,11 +187,12 @@ if __name__ == '__main__':
                 # cv2.putText(img,frame,(10,600), font, 2,(0,0,255),2,cv2.LINE_AA)
                 cv2.imshow("Parking Agent", np.array(img))
 
-            frames.append({'state': observation,'resulting state': resulting_state,'state history':history, 'action': action,'reward': reward, 'new start': done,'walk distance': walk_distance, 'drive distance':drive_distance})
+            frames.append({'state': observation,'resulting state': resulting_state,'state history':history, 'action': action,'reward': epRewards, 'new start': done,'walk distance': walk_distance, 'drive distance':drive_distance})
         if EPS - 2 / numEpisodes > 0:
             EPS -= 2 / numEpisodes
         else:
             EPS = 0
+        print(EPS)
         if epRewards > -10:
             learningRewards[i] = epRewards
 
