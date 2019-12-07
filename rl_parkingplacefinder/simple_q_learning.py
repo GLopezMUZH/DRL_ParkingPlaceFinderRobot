@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     ffp = Parking_lot.Filling_Function_Parameters(uniform_distribution_p_value = 0.5)
     ldp = Parking_lot.Lane_Direction_Parameters()
-    EPISODES = 60000 #55000
+    EPISODES = 55000
     show = False #True
 
     parking_environment = Parking_Lot(lane_direction_paramenters=ldp,
@@ -118,47 +118,38 @@ if __name__ == '__main__':
         observation = env.agentPosition
         # Every xth episode we reset the car to position 0 and start again
         if i % (EPISODES/100) == 0:
-            # print('starting episode ', i)
             observation = env.reset()
         done = False
 
         epRewards = 0
-        history = [0]
+        history = []
 
         while not done:
             finish = False
-
             rand = np.random.random()
             action = maxAction(Q, observation, env.possibleActions) if rand < (1-EPS) else env.actionSpaceSample()
-            # this ovservatio is a trial step
+            # this ovservation is a trial step
             observation_, reward, done, info = env.step(action)
-
-
 
             # making sure that when parking lot was reached or a crash with a parked car occures, we terminate this episode (just experimental, should be handled in the getReward function)
             resulting_state = observation+env.actionSpace[action]
             # print(env.actionSpace[action])
 
-            if reward == -(nx.shortest_path_length(parking_lot,source=env.agentPosition,target=max(env.vacant_list)))**2/max(env.vacant_list) or reward == reward_parameters.PARK_CRASH_REWARD or reward == reward_parameters.WALL_CRASH_REWARD:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
+            if done:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
                 if cv2.waitKey(50) & 0xFF == ord('q'):
                     break
             else:
                 if cv2.waitKey(1) & 0x7F == ord('q'):
                     break
-            # time.sleep(0.001)
 
             if observation_+env.actionSpace[action] in env.vacant_list and action == 5:
                 finish = True
-            #     reward = 25
-            # if observation_+env.actionSpace[action] in env.taken_list:
-            #     finish = True
-            #     # reward = -300
+
             epRewards += reward
-            # print(epRewards)
 
             action_ = maxAction(Q, observation_, env.possibleActions)
             Q[observation,action] = Q[observation,action] + ALPHA*(reward + GAMMA*Q[observation_,action_] - Q[observation,action])
-            history.append(observation_)
+            history.append(observation)
             observation = observation_
 
             if resulting_state in env.vacant_list and action == 5:
@@ -166,45 +157,32 @@ if __name__ == '__main__':
                 walk_distance = nx.shortest_path_length(parking_lot,source=resulting_state,target=max(env.parking_lot.nodes))
                 drive_distance = nx.shortest_path_length(parking_lot,source=0,target=resulting_state)
             if finish:
-                print("start a new episode")
                 done = True
                 env.reset()
                 history.append(resulting_state)
-
+                frames.append({'state': observation, 'resulting state': resulting_state, 'state history': history[:-1],
+                               'action': action, 'reward': epRewards, 'new start': done, 'walk distance': walk_distance,
+                               'drive distance': drive_distance})
             else:
                 walk_distance = False
                 drive_distance = False
 
             if show:
-                # grid = np.where(env.grid==1, 128, env.grid)
-                # grid = np.where(grid==2, 255, grid)
-                # grid = np.where(grid==3, 255, grid)
-                # img = Image.fromarray(grid,mode='L')
                 img = scipy.misc.toimage(env.grid)
                 img = img.resize((500, 500))  # resizing so we can see our agent in all its glory.
-                # font = cv2.FONT_HERSHEY_SIMPLEX
-                # img = cv2.copyMakeBorder(img, 10, 200, 10, 10, cv2.BORDER_CONSTANT)
-                # cv2.putText(img,frame,(10,600), font, 2,(0,0,255),2,cv2.LINE_AA)
                 cv2.imshow("Parking Agent", np.array(img))
 
-            frames.append({'state': observation,'resulting state': resulting_state,'state history':history, 'action': action,'reward': epRewards, 'new start': done,'walk distance': walk_distance, 'drive distance':drive_distance})
         if EPS - 2 / numEpisodes > 0:
             EPS -= 2 / numEpisodes
         else:
             EPS = 0
-        print(EPS)
-        if epRewards > -10:
+        print("Epsilon: ", round(EPS,3))
+        if epRewards:
             learningRewards[i] = epRewards
 
         totalRewards[i] = epRewards
-        # if i % 100 ==0:
-        #     env.render()
-
 
     print(print_frames(frames))
     # plt.plot(totalRewards)
     plt.plot(learningRewards)
     plt.show()
-
-
-# %%
