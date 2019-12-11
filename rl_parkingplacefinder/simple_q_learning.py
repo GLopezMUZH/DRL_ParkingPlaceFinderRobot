@@ -45,52 +45,53 @@ from Park_Finder_Agent import Reward_Parameters
 """
 # %%
 
-
-def print_frames(frames):
-    for i, frame in enumerate(frames):
-        print(f"Timestep: {i + 1}")
-        print(f"State: {frame['state']}")
-        print(f"Resulting state: {frame['resulting state']}")
-        print(f"Path: {frame['state history']}")
-        print(f"Action history: {frame['action history']}")
-        print(f"Reward history: {frame['reward history']}")
-        print(f"Action: {frame['action']}")
-        print(f"Reward: {frame['reward']}")
-        print(f"Found parking: {frame['new start']}")
-        print(f"Walking distance: {frame['walk distance']}")
-        print(f"Driving distance: {frame['drive distance']}")
-        print('-------------')
-
-
-def maxAction(Q, state, actions):
-    values = np.array([Q[state, a] for a in actions])
-    # if all the values are 0 in the Q table, pick random an action (otherwise it would always chose the first one)
-    if sum(values) == 0:
-        # print("picking random")
-        action = np.random.randint(0, 4)
-    else:
-        # if there is already something learned, pick the one which has the highest reward attached to it
-        action = np.argmax(values)
-    return actions[action]
+class Utils():
+    def print_frames(self, frames):
+        for i, frame in enumerate(frames):
+            print(f"Timestep: {i + 1}")
+            print(f"State: {frame['state']}")
+            print(f"Resulting state: {frame['resulting state']}")
+            print(f"Path: {frame['state history']}")
+            print(f"Action history: {frame['action history']}")
+            print(f"Reward history: {frame['reward history']}")
+            print(f"Action: {frame['action']}")
+            print(f"Reward: {frame['reward']}")
+            print(f"Found parking: {frame['new start']}")
+            print(f"Walking distance: {frame['walk distance']}")
+            print(f"Driving distance: {frame['drive distance']}")
+            print('-------------')
 
 
-def make_combo_plot(a, b, save_file=False, file_name_combo_plot='None'):
-    fig, ax1 = plt.subplots()
-    color = 'tab:green'
-    ax1.set_xlabel('episodes (s)')
-    ax1.set_ylabel('rewards', color=color)
-    ax1.plot(a, color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
-    ax2 = ax1.twinx()
-    color = 'tab:blue'
-    ax2.set_ylabel('epsilon', color=color)
-    ax2.plot(b, color=color)
-    ax2.tick_params(axis='y', labelcolor=color)
+    def maxAction(self, Q, state, actions):
+        values = np.array([Q[state, a] for a in actions])
+        action = 0
+        # if all the values are 0 in the Q table, pick random an action (otherwise it would always chose the first one)
+        if sum(values) == 0:
+            # print("picking random")
+            action = np.random.randint(0, 4)
+        else:
+            # if there is already something learned, pick the one which has the highest reward attached to it
+            action = np.argmax(values)
+        return actions[action]
 
-    fig.tight_layout()
-    if (save_file):
-        plt.savefig(file_name_combo_plot)
-    plt.show()
+
+    def make_combo_plot(self, a, b, save_file=False, file_name_combo_plot='None'):
+        fig, ax1 = plt.subplots()
+        color = 'tab:green'
+        ax1.set_xlabel('episodes (s)')
+        ax1.set_ylabel('rewards', color=color)
+        ax1.plot(a, color=color)
+        ax1.tick_params(axis='y', labelcolor=color)
+        ax2 = ax1.twinx()
+        color = 'tab:blue'
+        ax2.set_ylabel('epsilon', color=color)
+        ax2.plot(b, color=color)
+        ax2.tick_params(axis='y', labelcolor=color)
+
+        fig.tight_layout()
+        if save_file:
+            plt.savefig(file_name_combo_plot)
+        plt.show()
 
 
 # %%
@@ -112,6 +113,8 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
         if debug:
             print(list(val))
 
+    utils = Utils()
+
     print('Start learning: '+str(datetime.today().strftime("%d-%m-%y %H %M %S")))
 
     p_lot = parking_environment.get_env()
@@ -130,6 +133,7 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
 
     pbar = tqdm(range(num_episodes))
     for i in pbar:
+        # observation = current state
         observation = agent.agentPosition
         # Every xth episode we reset the car to position 0 and start again
         if i % (UPPER_LIMIT) == 0:
@@ -144,13 +148,14 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
         while not done:
             finish = False
             rand = np.random.random()
-            act = maxAction(Q, observation, agent.possibleActions) if rand < (
+            action = utils.maxAction(Q, observation, agent.possibleActions) if rand < (
                 1-eps) else agent.actionSpaceSample()
-            # this ovservatio is a trial step
-            observation_, reward, done, info = agent.step(act)
+            # ovservation_ is a trial step
+            observation_, reward, done, info = agent.step(action)
 
-            # making sure that when parking lot was reached or a crash with a parked car occures, we terminate this episode (just experimental, should be handled in the getReward function)
-            resulting_state = observation+agent.actionSpace[act]
+            # making sure that when parking lot was reached or a crash with a parked car occures, 
+            # we terminate this episode (just experimental, should be handled in the getReward function)
+            resulting_state = observation+agent.actionSpace[action]
 
             if done:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
                 if (cv2.waitKey(50) & 0xFF) == ord('q'):
@@ -159,21 +164,22 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
                 if (cv2.waitKey(1) & 0x7F) == ord('q'):
                     break
 
-            if observation_+agent.actionSpace[act] in agent.vacant_list and act == 5:
+            # agent will park
+            if observation_+agent.actionSpace[action] in agent.vacant_list and action == 5:
                 finish = True
 
             ep_rewards += reward
 
-            action_ = maxAction(Q, observation_, agent.possibleActions)
-            Q[observation, act] = Q[observation, act] + lmp.ALPHA * \
+            action_ = utils.maxAction(Q, observation_, agent.possibleActions)
+            Q[observation, action] = Q[observation, action] + lmp.ALPHA * \
                 (reward + lmp.GAMMA*Q[observation_,
-                                      action_] - Q[observation, act])
+                                      action_] - Q[observation, action])
             history.append(observation)
-            action_history.append(act)
+            action_history.append(action)
             reward_history.append(ep_rewards)
             observation = observation_
 
-            if resulting_state in agent.vacant_list and act == 5:
+            if resulting_state in agent.vacant_list and action == 5:
                 walk_distance = nx.shortest_path_length(
                     p_lot, source=resulting_state, target=max(agent.parking_lot.nodes))
                 drive_distance = nx.shortest_path_length(
@@ -185,7 +191,7 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
                 history.append(resulting_state)
                 frames.append({'state': observation, 'resulting state': resulting_state, 'state history': history[:-1],
                                'action history': action_history, 'reward history': reward_history,
-                               'action': act, 'reward': ep_rewards, 'new start': done, 'walk distance': walk_distance,
+                               'action': action, 'reward': ep_rewards, 'new start': done, 'walk distance': walk_distance,
                                'drive distance': drive_distance})
             else:
                 walk_distance = False
@@ -222,7 +228,7 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
     print('End learning: '+str(datetime.today().strftime("%d-%m-%y %H %M %S")))
 
     if show_frames:
-        print(print_frames(frames))
+        print(utils.print_frames(frames))
 
     # save frames as csv but extension txt because delimier is ; and cells include ,'s
     if save_frames:
@@ -240,7 +246,7 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
     file_name_combo_plot = 'qtables/plot_rewards_eps_' + ffp.getName() + '_' + \
         str(lmp.EPISODES) + '_' + \
         str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
-    make_combo_plot(learning_rewards, epsilon, save_file=True,
+    utils.make_combo_plot(learning_rewards, epsilon, save_file=True,
                     file_name_combo_plot=file_name_combo_plot)
 
     # plt.plot(learningRewards)

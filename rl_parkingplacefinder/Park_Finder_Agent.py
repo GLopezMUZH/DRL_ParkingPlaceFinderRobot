@@ -158,9 +158,10 @@ class Park_Finder_Agent():
             reward = round(reward, 3)
         if not self.offGridMove(resultingState, self.agentPosition):
             self.setState(resultingState)
-            # self.agentPosition = resultingState
+            # agent moved self.agentPosition = resultingState
             return resultingState, reward, self.isTerminalState(resultingState, action), None
         else:
+            # step was false so agent does not move, but it gets the reward
             return self.agentPosition, reward, self.isTerminalState(self.agentPosition, action), None
 
     def offGridMove(self, newState, oldState):
@@ -187,6 +188,3 @@ class Park_Finder_Agent():
 
     def actionSpaceSample(self):
         return np.random.choice(self.possibleActions)
-
-
-# %%
