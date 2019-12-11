@@ -134,7 +134,7 @@ class Learning_Model_Parameters():
 def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
                Q: dict, lmp: Learning_Model_Parameters,
                debug=False, show=False, show_frames=False,
-               save_qt=False, save_frames=False):
+               save_qt=True, save_frames=False):
 
     def __printDebug(*val):
         if debug:
