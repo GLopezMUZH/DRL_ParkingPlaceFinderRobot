@@ -1,4 +1,3 @@
-
 # %%
 """
     parkingplacefinder is an OpenSource python package for the reinforcement learning
@@ -14,10 +13,6 @@
     GNU Affero General Public License for more details.
 """
 # %%
-import Parking_lot
-from Parking_lot import Parking_Lot
-from Park_Finder_Agent import Park_Finder_Agent
-from Park_Finder_Agent import Reward_Parameters
 from datetime import datetime
 import time
 import numpy as np
@@ -34,6 +29,10 @@ import os
 os.getcwd()
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
+import Parking_lot
+from Parking_lot import Parking_Lot
+from Park_Finder_Agent import Park_Finder_Agent
+from Park_Finder_Agent import Reward_Parameters
 
 # %%
 """
@@ -97,10 +96,10 @@ def make_combo_plot(a, b, save_file=False, file_name_combo_plot='None'):
 # %%
 # model hyperparameters
 class Learning_Model_Parameters():
-    def __init__(self):
-        self.ALPHA = 0.1
-        self.GAMMA = 1.0
-        self.EPISODES = 100  # 55000
+    def __init__(self,episodes, alpha=0.1, gamma=1.0):
+        self.EPISODES = episodes #100  # 55000
+        self.ALPHA = alpha
+        self.GAMMA = gamma
 
 
 # %%
@@ -154,7 +153,7 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
             resulting_state = observation+agent.actionSpace[act]
 
             if done:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
-                if (cv2.waitKey([50]) & 0xFF) == ord('q'):
+                if (cv2.waitKey(50) & 0xFF) == ord('q'):
                     break
             else:
                 if (cv2.waitKey(1) & 0x7F) == ord('q'):
@@ -261,6 +260,7 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
             for key, value in Q.items():
                 writer.writerow([key[0], key[1], value])
 
+    return Q
 
 # %%
 if __name__ == '__main__':
@@ -281,7 +281,7 @@ if __name__ == '__main__':
 
     parking_lot = parking_environment.get_env()
     reward_parameters = Reward_Parameters()
-    lmp = Learning_Model_Parameters()
+    lmp = Learning_Model_Parameters(episodes=100)
 
     file_name_parking_lot_plot = 'qtables/parking_lot_' + ffp.getName() + '_' + \
         str(lmp.EPISODES) + '_' + \
@@ -297,6 +297,6 @@ if __name__ == '__main__':
         for action in agent.possibleActions:
             Q[state, action] = 0
 
-    doLearning(agent=agent, parking_environment=parking_environment, Q=Q, lmp=lmp)
+    Q_new = doLearning(agent=agent, parking_environment=parking_environment, Q=Q, lmp=lmp, save_qt=False,save_frames=False)
 
 # %%
