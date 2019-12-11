@@ -16,10 +16,6 @@
 # %%
 from datetime import datetime
 import time
-from Park_Finder_Agent import Reward_Parameters
-from Park_Finder_Agent import Park_Finder_Agent
-from Parking_lot import Parking_Lot
-import Parking_lot
 import numpy as np
 import collections
 import matplotlib.pylab as plt
@@ -33,6 +29,11 @@ from tqdm import tqdm
 import os
 os.getcwd()
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+from Park_Finder_Agent import Reward_Parameters
+from Park_Finder_Agent import Park_Finder_Agent
+from Parking_lot import Parking_Lot
+import Parking_lot
 
 
 # %%

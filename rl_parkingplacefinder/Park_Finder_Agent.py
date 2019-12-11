@@ -1,6 +1,4 @@
 # %%
-from Parking_lot import Parking_Lot
-import Parking_lot
 import numpy as np
 import collections
 import networkx as nx
@@ -9,6 +7,9 @@ import matplotlib.pylab as plt
 import os
 os.getcwd()
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+from Parking_lot import Parking_Lot
+import Parking_lot
 
 
 # %%
