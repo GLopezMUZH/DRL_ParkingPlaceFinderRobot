@@ -444,9 +444,15 @@ def doParking(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
 # %%
 if __name__ == '__main__':
 
-    ffp = Parking_lot.Filling_Function_Parameters(
-        uniform_distribution_p_value=0.5)
+    ffp = Parking_lot.Filling_Function_Parameters(uniform_distribution_p_value=0.5)
     ldp = Parking_lot.Lane_Direction_Parameters()
+    reward_parameters = Reward_Parameters()
+    lmp = Learning_Model_Parameters(episodes=300)
+
+    file_name_parking_lot_plot = 'qtables/parking_lot_' + ffp.getName() + '_' + \
+        str(lmp.EPISODES) + '_' + \
+        str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
+
 
     parking_environment = Parking_Lot(lane_direction_paramenters=ldp,
                                       filling_function_parameters=ffp,
@@ -455,18 +461,12 @@ if __name__ == '__main__':
                                       parking_lane_depth=2,
                                       debug=True,
                                       draw_graph=False,
+                                      save_plot_graph=True, 
+                                      file_name_parking_lot_plot=file_name_parking_lot_plot,
                                       show_summary=False
                                       )
 
     parking_lot = parking_environment.get_env()
-    reward_parameters = Reward_Parameters()
-    lmp = Learning_Model_Parameters(episodes=300)
-
-    file_name_parking_lot_plot = 'qtables/parking_lot_' + ffp.getName() + '_' + \
-        str(lmp.EPISODES) + '_' + \
-        str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
-    parking_environment.plot(
-        save_file=True, file_name_parking_lot_plot=file_name_parking_lot_plot)
 
     agent = Park_Finder_Agent(
         reward_parameters=reward_parameters, parking_environment=parking_environment)

@@ -68,7 +68,13 @@ class Parking_Lot():
         object of
     """
 
-    def __init__(self, lane_direction_paramenters: Lane_Direction_Parameters, filling_function_parameters: Filling_Function_Parameters, nr_parking_slots_per_lane=10, nr_parking_lanes=1, parking_lane_depth=2, single_depth_outer_lanes=True, debug = False, draw_graph = False, show_summary = False):
+    def __init__(self, lane_direction_paramenters: Lane_Direction_Parameters, 
+                    filling_function_parameters: Filling_Function_Parameters, 
+                    nr_parking_slots_per_lane=10, nr_parking_lanes=1, 
+                    parking_lane_depth=2, single_depth_outer_lanes=True, 
+                    debug = False, draw_graph = False, 
+                    save_plot_graph = False, file_name_parking_lot_plot = 'None',
+                    show_summary = False):
         self.nr_parking_slots_per_lane = nr_parking_slots_per_lane
         self.nr_parking_lanes = nr_parking_lanes
         self.nr_parking_slots = nr_parking_slots_per_lane*nr_parking_lanes
@@ -96,8 +102,8 @@ class Parking_Lot():
         #self.set_lane_directions()
         #self.export_to_pickle()
 
-        if draw_graph:
-            self.plot()
+        if draw_graph or save_plot_graph:
+            self.plot(save_plot_graph, file_name_parking_lot_plot)
 
         if show_summary:
             print("nr_parking_slots", self.nr_parking_slots)
