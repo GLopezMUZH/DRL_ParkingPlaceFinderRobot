@@ -238,6 +238,14 @@ class Parking_Lot():
                 else:
                     self.best_parking_slot = i
 
+    def clear_occupation(self):
+        for i in range(self.nr_slots_total):
+            if(self.g.nodes[i]['slot_type'] == 'park'):
+                self.node_color_map[i]='green'
+                self.g.nodes[i]['occupation'] = 'vacant'
+        self.nr_occupied_parking_slots = 0
+
+
     def export_parking_lot_data(self):
         """
         Saves parking lot into a csv file

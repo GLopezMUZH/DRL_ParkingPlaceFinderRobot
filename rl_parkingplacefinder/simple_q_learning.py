@@ -133,7 +133,7 @@ class Learning_Model_Parameters():
 def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
                Q: dict, lmp: Learning_Model_Parameters,
                debug=False, show=False, show_frames=False,
-               save_qt=True, save_frames=False):
+               save_qt=True, save_frames=False, plot_rewards = False):
 
     def __printDebug(*val):
         if debug:
@@ -273,13 +273,13 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
         # save q-table as numpy
         utils.save_q_table(ffp, lmp.EPISODES, Q)
 
-
-    # plt.plot(totalRewards)
-    file_name_combo_plot = 'qtables/plot_rewards_eps_' + ffp.getName() + '_' + \
-        str(lmp.EPISODES) + '_' + \
-        str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
-    utils.make_combo_plot(learning_rewards, epsilon, save_file=True,
-                    file_name_combo_plot=file_name_combo_plot)
+    if plot_rewards:
+        # plt.plot(totalRewards)
+        file_name_combo_plot = 'qtables/plot_rewards_eps_' + ffp.getName() + '_' + \
+            str(lmp.EPISODES) + '_' + \
+            str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
+        utils.make_combo_plot(learning_rewards, epsilon, save_file=True,
+                        file_name_combo_plot=file_name_combo_plot)
 
     return Q
 
@@ -466,8 +466,6 @@ if __name__ == '__main__':
                                       show_summary=False
                                       )
 
-    parking_lot = parking_environment.get_env()
-
     agent = Park_Finder_Agent(
         reward_parameters=reward_parameters, parking_environment=parking_environment)
 
@@ -476,6 +474,14 @@ if __name__ == '__main__':
         for action in agent.possibleActions:
             Q[state, action] = 0
 
-    Q_new = doLearning(agent=agent, parking_environment=parking_environment, Q=Q, lmp=lmp, save_qt=True,save_frames=True)
+    Q_1 = doLearning(agent=agent, parking_environment=parking_environment, Q=Q, lmp=lmp, save_qt=True,save_frames=True,plot_rewards=True)
+
+    parking_environment.clear_occupation()
+    parking_environment.fill_parking_slots()
+    agent.reset()
+
+    Q_2 = doLearning(agent=agent, parking_environment=parking_environment, Q=Q_1, lmp=lmp, save_qt=True,save_frames=True,plot_rewards=True)
+
+
 
 # %%
