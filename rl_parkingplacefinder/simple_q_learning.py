@@ -105,20 +105,19 @@ class Utils():
                 writer.writerow([(i + 1), frame['state'], frame['action'], frame['resulting state'], frame['reward'], frame['new start'],
                                 frame['state history'], frame['action history'], frame['reward history'], frame['walk distance'], frame['drive distance']])
 
-    def save_q_table(self, ffp, lmp, Q):
-        # save q-table as numpy
-        file_name_q_np = 'qtables/simpleq_' + ffp.getName() + '_' + str(lmp.EPISODES) + \
-            '_' + str(datetime.today().strftime("%y-%m-%d %H %M %S"))
-        np.save(file_name_q_np, Q)
-
+    def save_q_table(self, ffp, nr_episodes, Q):
         # save q-table as csv
-        file_name_q_csv = 'qtables/simpleq_' + ffp.getName() + '_' + str(lmp.EPISODES) + \
+        file_name_q_csv = 'qtables/simpleq_' + ffp.getName() + '_' + str(nr_episodes) + \
             '_' + str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.csv'
         with open(file_name_q_csv, 'w', newline='') as f:
             writer = csv.writer(f)
             for key, value in Q.items():
                 writer.writerow([key[0], key[1], value])
-
+        
+        # save q-table as numpy
+        file_name_q_np = 'qtables/simpleq_' + ffp.getName() + '_' + str(nr_episodes) + \
+            '_' + str(datetime.today().strftime("%y-%m-%d %H %M %S"))
+        np.save(file_name_q_np, Q)
 
 
 # %%
@@ -270,16 +269,17 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
     if save_frames:
         utils.save_frames(ffp, lmp.EPISODES, frames)
 
+    if save_qt:
+        # save q-table as numpy
+        utils.save_q_table(ffp, lmp.EPISODES, Q)
+
+
     # plt.plot(totalRewards)
     file_name_combo_plot = 'qtables/plot_rewards_eps_' + ffp.getName() + '_' + \
         str(lmp.EPISODES) + '_' + \
         str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
     utils.make_combo_plot(learning_rewards, epsilon, save_file=True,
                     file_name_combo_plot=file_name_combo_plot)
-
-    if save_qt:
-        # save q-table as numpy
-        utils.save_q_table(ffp, lmp, Q)
 
     return Q
 
@@ -476,6 +476,6 @@ if __name__ == '__main__':
         for action in agent.possibleActions:
             Q[state, action] = 0
 
-    Q_new = doLearning(agent=agent, parking_environment=parking_environment, Q=Q, lmp=lmp, save_qt=False,save_frames=True)
+    Q_new = doLearning(agent=agent, parking_environment=parking_environment, Q=Q, lmp=lmp, save_qt=True,save_frames=True)
 
 # %%
