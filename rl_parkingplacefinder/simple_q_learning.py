@@ -93,12 +93,39 @@ class Utils():
             plt.savefig(file_name_combo_plot)
         plt.show()
 
+    def save_frames(self, ffp, nr_episodes, frames):
+        # save frames as csv but extension txt because delimier is ; and cells include ,'s
+        file_name_frames_csv = 'qtables/simpleq_frames_' + ffp.getName() + '_' + str(nr_episodes) + \
+            '_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) + '.txt'
+        with open(file_name_frames_csv, 'w', newline='') as f:
+            writer = csv.writer(f, delimiter=";")
+            writer.writerow(['Timestep', 'State', 'Action', 'Resulting state', 'Reward', 'Found parking',
+                            'Path', 'Action history', 'Reward history', 'Walking distance', 'Driving distance'])
+            for i, frame in enumerate(frames):
+                writer.writerow([(i + 1), frame['state'], frame['action'], frame['resulting state'], frame['reward'], frame['new start'],
+                                frame['state history'], frame['action history'], frame['reward history'], frame['walk distance'], frame['drive distance']])
+
+    def save_q_table(self, ffp, lmp, Q):
+        # save q-table as numpy
+        file_name_q_np = 'qtables/simpleq_' + ffp.getName() + '_' + str(lmp.EPISODES) + \
+            '_' + str(datetime.today().strftime("%y-%m-%d %H %M %S"))
+        np.save(file_name_q_np, Q)
+
+        # save q-table as csv
+        file_name_q_csv = 'qtables/simpleq_' + ffp.getName() + '_' + str(lmp.EPISODES) + \
+            '_' + str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.csv'
+        with open(file_name_q_csv, 'w', newline='') as f:
+            writer = csv.writer(f)
+            for key, value in Q.items():
+                writer.writerow([key[0], key[1], value])
+
+
 
 # %%
 # model hyperparameters
 class Learning_Model_Parameters():
     def __init__(self,episodes, alpha=0.1, gamma=1.0):
-        self.EPISODES = episodes #100  # 55000
+        self.EPISODES = episodes # 55000
         self.ALPHA = alpha
         self.GAMMA = gamma
 
@@ -115,7 +142,7 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
 
     utils = Utils()
 
-    print('Start learning: '+str(datetime.today().strftime("%d-%m-%y %H %M %S")))
+    print('Start learning: '+str(datetime.today().strftime("%d-%m-%y %H %M %S"))+' - nr episodes: '+str(lmp.EPISODES))
 
     p_lot = parking_environment.get_env()
     ffp = parking_environment.filling_function_parameters
@@ -125,11 +152,18 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
 
     eps = 1.0
     num_episodes = lmp.EPISODES
-    total_rewards = np.zeros(num_episodes)
     learning_rewards = np.zeros(num_episodes)
     epsilon = np.zeros(num_episodes)
     UPPER_LIMIT = lmp.EPISODES/100
     last_rewards = collections.deque(maxlen=int(UPPER_LIMIT))
+
+    print('nr_occupied_parking_slots: '+str(parking_environment.nr_occupied_parking_slots))
+    print('best parking slot: '+str(parking_environment.best_parking_slot))
+
+    best_walk_distance = nx.shortest_path_length(
+                    p_lot, source=parking_environment.best_parking_slot, target=max(agent.parking_lot.nodes))
+
+    print('best_walk_distance: ' + str(best_walk_distance))
 
     pbar = tqdm(range(num_episodes))
     for i in pbar:
@@ -184,6 +218,7 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
                     p_lot, source=resulting_state, target=max(agent.parking_lot.nodes))
                 drive_distance = nx.shortest_path_length(
                     p_lot, source=0, target=resulting_state)
+            
             if finish:
                 __printDebug("start a new episode")
                 done = True
@@ -194,8 +229,8 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
                                'action': action, 'reward': ep_rewards, 'new start': done, 'walk distance': walk_distance,
                                'drive distance': drive_distance})
             else:
-                walk_distance = False
-                drive_distance = False
+                walk_distance = 0
+                drive_distance = 0
 
             if show:
                 img = scipy.misc.toimage(agent.grid)
@@ -217,11 +252,13 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
             learning_rewards[i] = ep_rewards
             last_rewards.append(ep_rewards)
 
-        if len(last_rewards) == UPPER_LIMIT and len(list(set(last_rewards))) == 1 and agent.reward_parameters.PARKING_REWARD-drive_distance == last_rewards[-1]:
-            print("Early stopping because of no changes")
-            epsilon = epsilon[epsilon != 0]
-            learning_rewards = learning_rewards[learning_rewards != 0]
-            break
+
+        if len(last_rewards) == UPPER_LIMIT:  
+            if  len(list(set(last_rewards))) == 1 and agent.reward_parameters.PARKING_REWARD-drive_distance == last_rewards[-1]:
+                print("Early stopping because of no changes")
+                epsilon = epsilon[epsilon != 0]
+                learning_rewards = learning_rewards[learning_rewards != 0]
+                break
 
         # totalRewards[i] = epRewards
 
@@ -230,17 +267,8 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
     if show_frames:
         print(utils.print_frames(frames))
 
-    # save frames as csv but extension txt because delimier is ; and cells include ,'s
     if save_frames:
-        file_name_frames_csv = 'qtables/simpleq_frames_' + ffp.getName() + '_' + str(lmp.EPISODES) + \
-            '_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) + '.txt'
-        with open(file_name_frames_csv, 'w', newline='') as f:
-            writer = csv.writer(f, delimiter=";")
-            writer.writerow(['Timestep', 'State', 'Action', 'Resulting state', 'Reward', 'Found parking',
-                            'Path', 'Action history', 'Reward history', 'Walking distance', 'Driving distance'])
-            for i, frame in enumerate(frames):
-                writer.writerow([(i + 1), frame['state'], frame['action'], frame['resulting state'], frame['reward'], frame['new start'],
-                                frame['state history'], frame['action history'], frame['reward history'], frame['walk distance'], frame['drive distance']])
+        utils.save_frames(ffp, lmp.EPISODES, frames)
 
     # plt.plot(totalRewards)
     file_name_combo_plot = 'qtables/plot_rewards_eps_' + ffp.getName() + '_' + \
@@ -249,24 +277,169 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
     utils.make_combo_plot(learning_rewards, epsilon, save_file=True,
                     file_name_combo_plot=file_name_combo_plot)
 
-    # plt.plot(learningRewards)
-    # plt.show()
-
     if save_qt:
         # save q-table as numpy
-        file_name_q_np = 'qtables/simpleq_' + ffp.getName() + '_' + str(lmp.EPISODES) + \
-            '_' + str(datetime.today().strftime("%y-%m-%d %H %M %S"))
-        np.save(file_name_q_np, Q)
-
-        # save q-table as csv
-        file_name_q_csv = 'qtables/simpleq_' + ffp.getName() + '_' + str(lmp.EPISODES) + \
-            '_' + str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.csv'
-        with open(file_name_q_csv, 'w', newline='') as f:
-            writer = csv.writer(f)
-            for key, value in Q.items():
-                writer.writerow([key[0], key[1], value])
+        utils.save_q_table(ffp, lmp, Q)
 
     return Q
+
+
+class Parking_Results():
+    def __init__(self):
+        self.walk_distance=0
+        self.found_slot=0
+        self.reset_times=0
+        self.frames=[]
+
+#%%
+# TODO
+# delete Learning_Model_Parameters we are not learning
+def doParking(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
+               Q: dict, max_episode_attempts=100,
+               debug=False, show=False,
+               save_frames=False):
+
+    def __printDebug(*val):
+        if debug:
+            print(list(val))
+
+    utils = Utils()
+    results = Parking_Results()
+
+    print('Start parking: '+str(datetime.today().strftime("%d-%m-%y %H %M %S"))+' - nr episodes: '+str(max_episode_attempts))
+
+    p_lot = parking_environment.get_env()
+    ffp = parking_environment.filling_function_parameters
+
+    frames = []  # for information
+    fig = plt.figure()
+
+    eps = 1.0
+    num_episodes = max_episode_attempts
+    total_rewards = np.zeros(num_episodes)
+    epsilon = np.zeros(num_episodes)
+    UPPER_LIMIT = max_episode_attempts/100
+    last_rewards = collections.deque(maxlen=int(UPPER_LIMIT))
+    reset_times = 0
+
+    print('nr_occupied_parking_slots: '+str(parking_environment.nr_occupied_parking_slots))
+    print('best parking slot: '+str(parking_environment.best_parking_slot))
+
+    best_walk_distance = nx.shortest_path_length(
+                    p_lot, source=parking_environment.best_parking_slot, target=max(agent.parking_lot.nodes))
+                    
+    print('best_walk_distance: ' + str(best_walk_distance))
+
+    pbar = tqdm(range(num_episodes))
+    for i in pbar:
+        # observation = current state
+        observation = agent.agentPosition
+        # Every xth episode we reset the car to position 0 and start again
+        if i % (UPPER_LIMIT) == 0:
+            reset_times += 1
+            observation = agent.reset()
+        done = False
+
+        ep_rewards = 0
+        history = []
+        action_history = []
+        reward_history = []
+
+        while not done:
+            finish = False
+            rand = np.random.random()
+            action = utils.maxAction(Q, observation, agent.possibleActions) if rand < (
+                1-eps) else agent.actionSpaceSample()
+            # ovservation_ is a trial step
+            observation_, reward, done, info = agent.step(action)
+
+            # making sure that when parking lot was reached or a crash with a parked car occures, 
+            # we terminate this episode (just experimental, should be handled in the getReward function)
+            resulting_state = observation+agent.actionSpace[action]
+
+            if done:  # crummy code to hang at the end if we reach abrupt end for good reasons or not.
+                if (cv2.waitKey(50) & 0xFF) == ord('q'):
+                    break
+            else:
+                if (cv2.waitKey(1) & 0x7F) == ord('q'):
+                    break
+
+            # agent will park
+            if observation_+agent.actionSpace[action] in agent.vacant_list and action == 5:
+                finish = True
+
+            ep_rewards += reward
+
+            history.append(observation)
+            action_history.append(action)
+            reward_history.append(ep_rewards)
+            observation = observation_
+
+            if resulting_state in agent.vacant_list and action == 5:
+                walk_distance = nx.shortest_path_length(
+                    p_lot, source=resulting_state, target=max(agent.parking_lot.nodes))
+                drive_distance = nx.shortest_path_length(
+                    p_lot, source=0, target=resulting_state)
+            
+            if finish:
+                __printDebug("start a new episode")
+                done = True
+                agent.reset()
+                history.append(resulting_state)
+                frames.append({'state': observation, 'resulting state': resulting_state, 'state history': history[:-1],
+                               'action history': action_history, 'reward history': reward_history,
+                               'action': action, 'reward': ep_rewards, 'new start': done, 'walk distance': walk_distance,
+                               'drive distance': drive_distance})
+            else:
+                walk_distance = 0
+                drive_distance = 0
+
+            if show:
+                img = scipy.misc.toimage(agent.grid)
+                # resizing so we can see our agent in all its glory.
+                img = img.resize((500, 500))
+                cv2.imshow("Parking Agent", np.array(img))
+
+        if eps - 2 / num_episodes > 0:
+            eps -= 2 / num_episodes
+        else:
+            eps = 0
+
+        epsilon[i] = eps
+        if ep_rewards:
+            learning_rewards[i] = ep_rewards
+            last_rewards.append(ep_rewards)
+
+        if len(last_rewards) == UPPER_LIMIT and len(list(set(last_rewards))) == 1 and agent.reward_parameters.PARKING_REWARD-drive_distance == last_rewards[-1]:
+            print("Early stopping because of no changes")
+            epsilon = epsilon[epsilon != 0]
+            learning_rewards = learning_rewards[learning_rewards != 0]
+            break
+
+        # agent has parked
+        if  done == True:
+            results.walk_distance=walk_distance
+            results.found_slot=resulting_state
+            results.frames=frames
+            break
+
+        # totalRewards[i] = epRewards
+
+    print('End parking: '+str(datetime.today().strftime("%d-%m-%y %H %M %S")))
+
+    if save_frames:
+        utils.save_frames(ffp, max_episode_attempts, frames)
+
+    # plt.plot(totalRewards)
+    file_name_combo_plot = 'qtables/plot_rewards_eps_' + ffp.getName() + '_' + \
+        str(max_episode_attempts) + '_' + \
+        str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
+
+    utils.make_combo_plot(learning_rewards, epsilon, save_file=True,
+                    file_name_combo_plot=file_name_combo_plot)
+
+    return results
+
 
 # %%
 if __name__ == '__main__':
@@ -287,7 +460,7 @@ if __name__ == '__main__':
 
     parking_lot = parking_environment.get_env()
     reward_parameters = Reward_Parameters()
-    lmp = Learning_Model_Parameters(episodes=100)
+    lmp = Learning_Model_Parameters(episodes=300)
 
     file_name_parking_lot_plot = 'qtables/parking_lot_' + ffp.getName() + '_' + \
         str(lmp.EPISODES) + '_' + \
@@ -303,6 +476,6 @@ if __name__ == '__main__':
         for action in agent.possibleActions:
             Q[state, action] = 0
 
-    Q_new = doLearning(agent=agent, parking_environment=parking_environment, Q=Q, lmp=lmp, save_qt=False,save_frames=False)
+    Q_new = doLearning(agent=agent, parking_environment=parking_environment, Q=Q, lmp=lmp, save_qt=False,save_frames=True)
 
 # %%

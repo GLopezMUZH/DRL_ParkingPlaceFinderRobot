@@ -78,6 +78,7 @@ class Parking_Lot():
         # internal variables
         self.node_color_map = []
         self.nr_occupied_parking_slots = 0
+        self.best_parking_slot = 0
         # helps define structure
         self.lane_direction_paramenters = lane_direction_paramenters
         # create grid
@@ -228,6 +229,8 @@ class Parking_Lot():
                     # so far only visual indication if parking spot is occupied (red)
                     # otherwise we only have visual indication and know number of occupied spots only on parking lot level
                     self.nr_occupied_parking_slots += 1
+                else:
+                    self.best_parking_slot = i
 
     def export_parking_lot_data(self):
         """
