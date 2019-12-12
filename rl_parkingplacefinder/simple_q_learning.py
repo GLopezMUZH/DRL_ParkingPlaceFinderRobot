@@ -23,7 +23,8 @@ from PIL import Image
 import cv2
 import scipy.misc
 import csv
-from tqdm import tqdm
+#from tqdm import tqdm
+from tqdm.autonotebook import tqdm
 
 import os
 os.getcwd()
@@ -61,6 +62,29 @@ class Utils():
             print(f"Driving distance: {frame['drive distance']}")
             print('-------------')
 
+    def print_frame(self, frame):
+        print("--- Frame ----------------")
+        print(f"Timestep: {frame['step']+1}")
+        print(f"State: {frame['state']}")
+        print(f"Resulting state: {frame['resulting state']}")
+        print(f"Path: {frame['state history']}")
+        print(f"Action history: {frame['action history']}")
+        print(f"Reward history: {frame['reward history']}")
+        print(f"Action: {frame['action']}")
+        print(f"Reward: {frame['reward']}")
+        print(f"Found parking: {frame['new start']}")
+        print(f"Walking distance: {frame['walk distance']}")
+        print(f"Driving distance: {frame['drive distance']}")
+
+    def print_frame_summary(self,frame):
+        print("--- Frame summary -----------")
+        print(f"Timestep: {frame['step']+1}")
+        print(f"Resulting state: {frame['resulting state']}")
+        print(f"Path lenght: {len(frame['state history'])}")
+        print(f"Reward: {frame['reward']}")
+        print(f"Found parking: {frame['new start']}")
+        print(f"Walking distance: {frame['walk distance']}")
+        print(f"Driving distance: {frame['drive distance']}")
 
     def maxAction(self, Q, state, actions):
         values = np.array([Q[state, a] for a in actions])
@@ -75,7 +99,7 @@ class Utils():
         return actions[action]
 
 
-    def make_combo_plot(self, a, b, save_file=False, file_name_combo_plot='None'):
+    def make_combo_plot(self, a, b, save_file=False, file_name_combo_plot='None', title_str='', subtitle_str=''):
         fig, ax1 = plt.subplots()
         color = 'tab:green'
         ax1.set_xlabel('episodes (s)')
@@ -87,27 +111,31 @@ class Utils():
         ax2.set_ylabel('epsilon', color=color)
         ax2.plot(b, color=color)
         ax2.tick_params(axis='y', labelcolor=color)
+        if title_str:
+            plt.title(title_str, y=1.15, fontsize=14)
+        if subtitle_str:
+            plt.suptitle(subtitle_str, y=1.0)
 
         fig.tight_layout()
         if save_file:
             plt.savefig(file_name_combo_plot)
         plt.show()
 
-    def save_frames(self, ffp, nr_episodes, frames):
+    def save_frames(self, file_sufix, nr_episodes, frames):
         # save frames as csv but extension txt because delimier is ; and cells include ,'s
-        file_name_frames_csv = 'qtables/simpleq_frames_' + ffp.getName() + '_' + str(nr_episodes) + \
+        file_name_frames_csv = 'qtables/simpleq_frames_' + file_sufix + '_' + str(nr_episodes) + \
             '_' + str(datetime.today().strftime("%d-%m-%y %H %M %S")) + '.txt'
         with open(file_name_frames_csv, 'w', newline='') as f:
             writer = csv.writer(f, delimiter=";")
             writer.writerow(['Timestep', 'State', 'Action', 'Resulting state', 'Reward', 'Found parking',
-                            'Path', 'Action history', 'Reward history', 'Walking distance', 'Driving distance'])
+                            'Path', 'Action history', 'Reward history', 'Walking distance', 'Driving distance','Step'])
             for i, frame in enumerate(frames):
                 writer.writerow([(i + 1), frame['state'], frame['action'], frame['resulting state'], frame['reward'], frame['new start'],
-                                frame['state history'], frame['action history'], frame['reward history'], frame['walk distance'], frame['drive distance']])
+                                frame['state history'], frame['action history'], frame['reward history'], frame['walk distance'], frame['drive distance'],frame['step']])
 
-    def save_q_table(self, ffp, nr_episodes, Q):
+    def save_q_table(self, file_sufix, nr_episodes, Q):
         # save q-table as csv
-        file_name_q_csv = 'qtables/simpleq_' + ffp.getName() + '_' + str(nr_episodes) + \
+        file_name_q_csv = 'qtables/simpleq_' + file_sufix + '_' + str(nr_episodes) + \
             '_' + str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.csv'
         with open(file_name_q_csv, 'w', newline='') as f:
             writer = csv.writer(f)
@@ -115,7 +143,7 @@ class Utils():
                 writer.writerow([key[0], key[1], value])
         
         # save q-table as numpy
-        file_name_q_np = 'qtables/simpleq_' + ffp.getName() + '_' + str(nr_episodes) + \
+        file_name_q_np = 'qtables/simpleq_' + file_sufix + '_' + str(nr_episodes) + \
             '_' + str(datetime.today().strftime("%y-%m-%d %H %M %S"))
         np.save(file_name_q_np, Q)
 
@@ -133,7 +161,8 @@ class Learning_Model_Parameters():
 def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
                Q: dict, lmp: Learning_Model_Parameters,
                debug=False, show=False, show_frames=False,
-               save_qt=True, save_frames=False, plot_rewards = False):
+               save_qt=True, save_frames=False, plot_rewards = False, 
+               file_sufix=''):
 
     def __printDebug(*val):
         if debug:
@@ -163,6 +192,7 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
                     p_lot, source=parking_environment.best_parking_slot, target=max(agent.parking_lot.nodes))
 
     print('best_walk_distance: ' + str(best_walk_distance))
+    walk_distance = 0
 
     pbar = tqdm(range(num_episodes))
     for i in pbar:
@@ -226,7 +256,7 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
                 frames.append({'state': observation, 'resulting state': resulting_state, 'state history': history[:-1],
                                'action history': action_history, 'reward history': reward_history,
                                'action': action, 'reward': ep_rewards, 'new start': done, 'walk distance': walk_distance,
-                               'drive distance': drive_distance})
+                               'drive distance': drive_distance, 'step': i})
             else:
                 walk_distance = 0
                 drive_distance = 0
@@ -263,33 +293,33 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
 
     print('End learning: '+str(datetime.today().strftime("%d-%m-%y %H %M %S")))
 
+    if not file_sufix:
+        file_sufix = ffp.getName()
+
+
     if show_frames:
         print(utils.print_frames(frames))
 
     if save_frames:
-        utils.save_frames(ffp, lmp.EPISODES, frames)
+        utils.save_frames(file_sufix, lmp.EPISODES, frames)
 
     if save_qt:
         # save q-table as numpy
-        utils.save_q_table(ffp, lmp.EPISODES, Q)
+        utils.save_q_table(file_sufix, lmp.EPISODES, Q)
 
     if plot_rewards:
         # plt.plot(totalRewards)
         file_name_combo_plot = 'qtables/plot_rewards_eps_' + ffp.getName() + '_' + \
             str(lmp.EPISODES) + '_' + \
             str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
+        title_str = ffp.getName() + '_' + str(lmp.EPISODES)
+        subtitle_str = ' Alpha: ' + str('{0:.4f}'.format(lmp.ALPHA)) + ', Gamma: ' + str('{0:.4f}'.format(lmp.GAMMA))
         utils.make_combo_plot(learning_rewards, epsilon, save_file=True,
-                        file_name_combo_plot=file_name_combo_plot)
+                            file_name_combo_plot=file_name_combo_plot, 
+                            title_str=title_str, subtitle_str=subtitle_str)
 
-    return Q
+    return Q, frames[-1]
 
-
-class Parking_Results():
-    def __init__(self):
-        self.walk_distance=0
-        self.found_slot=0
-        self.reset_times=0
-        self.frames=[]
 
 #%%
 # TODO
@@ -320,7 +350,7 @@ def doParking(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
     epsilon = np.zeros(num_episodes)
     UPPER_LIMIT = max_episode_attempts/100
     last_rewards = collections.deque(maxlen=int(UPPER_LIMIT))
-    reset_times = 0
+    number_of_resets = 0
 
     print('nr_occupied_parking_slots: '+str(parking_environment.nr_occupied_parking_slots))
     print('best parking slot: '+str(parking_environment.best_parking_slot))
@@ -336,7 +366,7 @@ def doParking(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
         observation = agent.agentPosition
         # Every xth episode we reset the car to position 0 and start again
         if i % (UPPER_LIMIT) == 0:
-            reset_times += 1
+            number_of_resets += 1
             observation = agent.reset()
         done = False
 
@@ -353,7 +383,7 @@ def doParking(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
             # ovservation_ is a trial step
             observation_, reward, done, info = agent.step(action)
 
-            # making sure that when parking lot was reached or a crash with a parked car occures, 
+            # making sure that when parking lot was reached or a crash with a parked car occures,
             # we terminate this episode (just experimental, should be handled in the getReward function)
             resulting_state = observation+agent.actionSpace[action]
 
@@ -411,7 +441,7 @@ def doParking(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
             last_rewards.append(ep_rewards)
 
         if len(last_rewards) == UPPER_LIMIT and len(list(set(last_rewards))) == 1 and agent.reward_parameters.PARKING_REWARD-drive_distance == last_rewards[-1]:
-            print("Early stopping because of no changes")
+            print("Early stopping because of no changes. Run episodes: "+str(i))
             epsilon = epsilon[epsilon != 0]
             learning_rewards = learning_rewards[learning_rewards != 0]
             break
@@ -441,47 +471,151 @@ def doParking(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
     return results
 
 
-# %%
-if __name__ == '__main__':
-
+#%%
+def create_base_test_scenario(nr_episodes):
     ffp = Parking_lot.Filling_Function_Parameters(uniform_distribution_p_value=0.5)
     ldp = Parking_lot.Lane_Direction_Parameters()
     reward_parameters = Reward_Parameters()
-    lmp = Learning_Model_Parameters(episodes=300)
+    lmp = Learning_Model_Parameters(episodes=nr_episodes)
 
     file_name_parking_lot_plot = 'qtables/parking_lot_' + ffp.getName() + '_' + \
-        str(lmp.EPISODES) + '_' + \
+        str(nr_episodes) + '_' + \
         str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
 
 
     parking_environment = Parking_Lot(lane_direction_paramenters=ldp,
-                                      filling_function_parameters=ffp,
-                                      nr_parking_slots_per_lane=5,
-                                      nr_parking_lanes=4,
-                                      parking_lane_depth=2,
-                                      debug=True,
-                                      draw_graph=False,
-                                      save_plot_graph=True, 
-                                      file_name_parking_lot_plot=file_name_parking_lot_plot,
-                                      show_summary=False
-                                      )
+                                        filling_function_parameters=ffp,
+                                        nr_parking_slots_per_lane=5,
+                                        nr_parking_lanes=4,
+                                        parking_lane_depth=2,
+                                        debug=True,
+                                        draw_graph=False,
+                                        save_plot_graph=True, 
+                                        file_name_parking_lot_plot=file_name_parking_lot_plot,
+                                        show_summary=False
+                                        )
 
     agent = Park_Finder_Agent(
         reward_parameters=reward_parameters, parking_environment=parking_environment)
+    return agent, lmp, parking_environment, ffp.getName()
 
+
+# %%
+# EXAMPLE - simple
+# 
+#if __name__ == '__main__':
+def example_1():
+    utils = Utils()
+    agent, lmp, parking_environment, file_sufix = create_base_test_scenario(nr_episodes=100)
     Q = {}
     for state in agent.stateSpacePlus:
         for action in agent.possibleActions:
             Q[state, action] = 0
 
-    Q_1 = doLearning(agent=agent, parking_environment=parking_environment, Q=Q, lmp=lmp, save_qt=True,save_frames=True,plot_rewards=True)
+    Q_1, last_frame = doLearning(agent=agent, parking_environment=parking_environment, 
+                                    Q=Q, lmp=lmp, save_qt=False, 
+                                    save_frames=False,plot_rewards=True)
+
+    utils.print_frame_summary(last_frame)
+    
+    return Q_1
+
+#Q_1 = example_1()
+
+#%%
+# Example 2 - use previous Q_table and overwrite it
+# reset parking lot, plot it again and do learning over new parking configuration with input from previous q-t
+def example_2():
+    agent, lmp, parking_environment, file_sufix = create_base_test_scenario(nr_episodes=100)
+    Q = {}
+    for state in agent.stateSpacePlus:
+        for action in agent.possibleActions:
+            Q[state, action] = 0
+
+    Q_1, last_frame = doLearning(agent=agent, parking_environment=parking_environment, 
+                                Q=Q, lmp=lmp, save_qt=True,
+                                save_frames=True, plot_rewards=True)
 
     parking_environment.clear_occupation()
     parking_environment.fill_parking_slots()
     agent.reset()
+    file_name_parking_lot_plot = 'qtables/parking_lot_' + file_sufix + '_' + \
+        str(lmp.EPISODES) + '_' + \
+        str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
 
-    Q_2 = doLearning(agent=agent, parking_environment=parking_environment, Q=Q_1, lmp=lmp, save_qt=True,save_frames=True,plot_rewards=True)
+    parking_environment.plot(save_file=True,file_name_parking_lot_plot=file_name_parking_lot_plot)
 
+    Q_2, last_frame = doLearning(agent=agent, parking_environment=parking_environment, 
+                        Q=Q_1, lmp=lmp, save_qt=True, save_frames=True,
+                        plot_rewards=True)
+
+# example_2()
+
+#%%
+def plot_field_from_last_frames(frames, field_name, x_range, x_label='', title_str='', subtitle_str=''):
+    plot_array = []
+    for i in range(len(frames)):
+        plot_array.append(frames[i][field_name])
+
+    fig, ax1 = plt.subplots()
+    plt.plot(x_range, plot_array)
+    ax1.set_xlabel(x_label)
+    ax1.set_ylabel(field_name)
+
+    if title_str:
+        plt.title(title_str, y=1.15, fontsize=14)
+    if subtitle_str:
+        plt.suptitle(subtitle_str, y=1.0)
+
+    fig.tight_layout()
+    plt.savefig('qtables/'+field_name+'_on_'+x_label+'.png')
+    plt.show()
+
+
+
+
+
+
+# %%
+# example 3, compare learning with different parameters
+def example_changes_on_alpha():
+    utils = Utils()
+    agent, lmp, parking_environment, file_sufix = create_base_test_scenario(
+        nr_episodes=50)
+
+    values_alpha = np.linspace(0.01, 0.9, 2)
+    values_alpha = np.append(values_alpha, [0.1])
+    values_alpha.sort()
+
+    last_frames = []
+
+    for v_alpha in values_alpha:
+        Q = {}
+        Q_1 = {}
+        for state in agent.stateSpacePlus:
+            for action in agent.possibleActions:
+                Q[state, action] = 0
+
+        lmp.ALPHA = v_alpha
+        Q_1, last_frame = doLearning(agent=agent, parking_environment=parking_environment,
+                                     Q=Q, lmp=lmp, save_qt=False, save_frames=False,
+                                     plot_rewards=True)
+
+        last_frames.append(last_frame)
+        utils.print_frame_summary(last_frame)
+
+    return last_frames, values_alpha
+
+#last_frames, values_alpha = example_changes_on_alpha()
+#plot_field_from_last_frames(frames=last_frames, field_name='reward',
+#                                x_range=values_alpha, x_label='alpha', title_str='Changes in Alpha')
+
+'''
+for i in range(len(last_frames)):
+    print(last_frames[i]['reward'])
+    print(last_frames[1]['walk distance'])
+    print(last_frames[i]['drive distance'])
+'''
 
 
 # %%
