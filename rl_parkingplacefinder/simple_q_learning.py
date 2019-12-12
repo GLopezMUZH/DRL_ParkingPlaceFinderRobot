@@ -38,11 +38,7 @@ from Park_Finder_Agent import Reward_Parameters
 # %%
 """
 #TODO:
-    - Balance rewards
-    - What is the best option to combine optimization for 1) reward of parking lot 2) walking distance 3) parking distance
     - Enable rendering with agent on the terminal state for better understanding
-    - After maximizing reward (very early) agent somehow still goes for smaller rewards and sticks to close parking slots in the end
-    - Allow agent only to drive straight into parking lot
 """
 # %%
 
@@ -156,6 +152,34 @@ class Learning_Model_Parameters():
         self.ALPHA = alpha
         self.GAMMA = gamma
 
+#%%
+def create_parking_scenario(nr_episodes, uniform_distribution_p_value,
+                            nr_parking_slots_per_lane, nr_parking_lanes,
+                            parking_lane_depth, debug, draw_graph, save_plot_graph):
+    ffp = Parking_lot.Filling_Function_Parameters(uniform_distribution_p_value=uniform_distribution_p_value)
+    ldp = Parking_lot.Lane_Direction_Parameters()
+    reward_parameters = Reward_Parameters()
+    lmp = Learning_Model_Parameters(episodes=nr_episodes)
+
+    file_name_parking_lot_plot = 'qtables/parking_lot_' + ffp.getName() + '_' + str(nr_episodes) + '_' + str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
+
+    parking_environment = Parking_Lot(lane_direction_paramenters=ldp,
+                                        filling_function_parameters=ffp,
+                                        nr_parking_slots_per_lane=nr_parking_slots_per_lane,
+                                        nr_parking_lanes=nr_parking_lanes,
+                                        parking_lane_depth=parking_lane_depth,
+                                        debug=debug,
+                                        draw_graph=draw_graph,
+                                        save_plot_graph=save_plot_graph, 
+                                        file_name_parking_lot_plot=file_name_parking_lot_plot,
+                                        show_summary=False
+                                        )
+
+    agent = Park_Finder_Agent(
+        reward_parameters=reward_parameters, parking_environment=parking_environment)
+        
+    return agent, lmp, parking_environment, ffp.getName()
+
 
 # %%
 def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
@@ -167,6 +191,14 @@ def doLearning(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
     def __printDebug(*val):
         if debug:
             print(list(val))
+
+    # started with empty Q table, initialize to zeros
+    if not Q:
+        for state in agent.stateSpacePlus:
+            for action in agent.possibleActions:
+                Q[state, action] = 0
+
+
 
     utils = Utils()
 
@@ -333,6 +365,10 @@ def doParking(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
         if debug:
             print(list(val))
 
+    # started with empty Q table, initialize to zeros
+    if not Q:
+        return -1 #TODO raise exception
+
     utils = Utils()
     results = Parking_Results()
 
@@ -473,31 +509,15 @@ def doParking(agent: Park_Finder_Agent, parking_environment: Parking_Lot,
 
 #%%
 def create_base_test_scenario(nr_episodes):
-    ffp = Parking_lot.Filling_Function_Parameters(uniform_distribution_p_value=0.5)
-    ldp = Parking_lot.Lane_Direction_Parameters()
-    reward_parameters = Reward_Parameters()
-    lmp = Learning_Model_Parameters(episodes=nr_episodes)
-
-    file_name_parking_lot_plot = 'qtables/parking_lot_' + ffp.getName() + '_' + \
-        str(nr_episodes) + '_' + \
-        str(datetime.today().strftime("%y-%m-%d %H %M %S")) + '.png'
-
-
-    parking_environment = Parking_Lot(lane_direction_paramenters=ldp,
-                                        filling_function_parameters=ffp,
-                                        nr_parking_slots_per_lane=5,
-                                        nr_parking_lanes=4,
-                                        parking_lane_depth=2,
-                                        debug=True,
-                                        draw_graph=False,
-                                        save_plot_graph=True, 
-                                        file_name_parking_lot_plot=file_name_parking_lot_plot,
-                                        show_summary=False
-                                        )
-
-    agent = Park_Finder_Agent(
-        reward_parameters=reward_parameters, parking_environment=parking_environment)
-    return agent, lmp, parking_environment, ffp.getName()
+    return create_parking_scenario(nr_episodes=nr_episodes, 
+                                    uniform_distribution_p_value=0.5,
+                                    nr_parking_slots_per_lane=5,
+                                    nr_parking_lanes=4,
+                                    parking_lane_depth=2,
+                                    debug=False,
+                                    draw_graph=False,
+                                    save_plot_graph=True
+                                    )
 
 
 # %%
@@ -508,10 +528,6 @@ def example_1():
     utils = Utils()
     agent, lmp, parking_environment, file_sufix = create_base_test_scenario(nr_episodes=100)
     Q = {}
-    for state in agent.stateSpacePlus:
-        for action in agent.possibleActions:
-            Q[state, action] = 0
-
     Q_1, last_frame = doLearning(agent=agent, parking_environment=parking_environment, 
                                     Q=Q, lmp=lmp, save_qt=False, 
                                     save_frames=False,plot_rewards=True)
@@ -520,7 +536,7 @@ def example_1():
     
     return Q_1
 
-#Q_1 = example_1()
+# Q_1 = example_1()
 
 #%%
 # Example 2 - use previous Q_table and overwrite it
@@ -528,9 +544,6 @@ def example_1():
 def example_2():
     agent, lmp, parking_environment, file_sufix = create_base_test_scenario(nr_episodes=100)
     Q = {}
-    for state in agent.stateSpacePlus:
-        for action in agent.possibleActions:
-            Q[state, action] = 0
 
     Q_1, last_frame = doLearning(agent=agent, parking_environment=parking_environment, 
                                 Q=Q, lmp=lmp, save_qt=True,
@@ -572,10 +585,6 @@ def plot_field_from_last_frames(frames, field_name, x_range, x_label='', title_s
     plt.show()
 
 
-
-
-
-
 # %%
 # example 3, compare learning with different parameters
 def example_changes_on_alpha():
@@ -609,13 +618,3 @@ def example_changes_on_alpha():
 #last_frames, values_alpha = example_changes_on_alpha()
 #plot_field_from_last_frames(frames=last_frames, field_name='reward',
 #                                x_range=values_alpha, x_label='alpha', title_str='Changes in Alpha')
-
-'''
-for i in range(len(last_frames)):
-    print(last_frames[i]['reward'])
-    print(last_frames[1]['walk distance'])
-    print(last_frames[i]['drive distance'])
-'''
-
-
-# %%
