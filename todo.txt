@@ -1,0 +1,25 @@
+- export Q table (Q dict)  limit now: 8000 episodes, teoretically when Qvalues not changing (break on local maximum of max reward: if after X episodes reward does not improve over X% and map.visitplaces > x% then local maximum)
+- agent able to import Q table's
+- able to generalize -> THINK!!!
+	. merge Q tables from differen parking lot "entities" by weigthed probability distribution of state * reward
+
+- agent with perfect memory 
+
+
+- Learning policies for learning policies:
+- https://hackernoon.com/learning-policies-for-learning-policies-meta-reinforcement-learning-rl%C2%B2-in-tensorflow-b15b592a2ddf
+- https://en.wikipedia.org/wiki/Markov_decision_process
+
+
+
+- Parking Lot fill-state distribution similarity:
+	- Kullback–Leibler distance  is a natural distance function from a "true" probability distribution, p, to a "target" probability distribution, q
+	- https://www.datadoghq.com/blog/engineering/robust-statistical-distances-for-machine-learning/
+	- https://en.wikipedia.org/wiki/Statistical_distance
+	- https://docs.scipy.org/doc/scipy/reference/spatial.distance.html
+	- https://mathoverflow.net/questions/103115/distance-metric-between-two-sample-distributions-histograms
+
+
+
+
+
